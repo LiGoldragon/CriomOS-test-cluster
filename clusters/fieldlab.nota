@@ -100,7 +100,22 @@
       (NodeServices Client None)))
   ]
 
-  []
+  [
+    (Entry aria (UserProposal
+      Code
+      Max
+      Colemak
+      Emacs
+      None
+      None
+      [
+        (Entry cedar (UserPubKeyEntry
+          "AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
+          "0123456789ABCDEF0123456789ABCDEF01234567"))
+      ]
+      None
+      None))
+  ]
   []
 
   (ClusterTrust
@@ -111,4 +126,6 @@
       (Entry beacon Max)
       (Entry cedar Max)
     ]
-    []))
+    [
+      (Entry aria Max)
+    ]))

@@ -20,6 +20,8 @@ The pure checks cover:
 - CriomOS network service rendering from `NodeServices`.
 - CriomOS Nix client, builder, cache, and retention rendering from
   projected Horizon roles.
+- full CriomOS aggregate module instantiation with home disabled for
+  synthetic client and builder nodes.
 - Wi-Fi EAP-TLS client profile setup for a node that declares a Wi-Fi
   certificate.
 - CriomOS module source constraints against production host facts and

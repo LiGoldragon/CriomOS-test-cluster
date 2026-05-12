@@ -64,6 +64,10 @@
             inherit inputs self system;
           };
 
+          full-module-contracts = pkgs.callPackage ./checks/full-module-contracts.nix {
+            inherit inputs self system;
+          };
+
           source-constraints = pkgs.callPackage ./checks/source-constraints.nix {
             inherit inputs;
           };

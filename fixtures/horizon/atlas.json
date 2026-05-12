@@ -150,7 +150,9 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
     ],
-    "adminSshPubKeys": [],
+    "adminSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
+    ],
     "wireguardUntrustedProxies": []
   },
   "exNodes": {
@@ -341,5 +343,58 @@
       }
     }
   },
-  "users": {}
+  "users": {
+    "aria": {
+      "name": "aria",
+      "species": "Code",
+      "size": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "keyboard": "Colemak",
+      "style": "Emacs",
+      "githubId": "aria",
+      "pubKeys": {
+        "cedar": {
+          "ssh": "AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000",
+          "keygrip": "0123456789ABCDEF0123456789ABCDEF01234567"
+        }
+      },
+      "hasPubKey": false,
+      "emailAddress": "aria@fieldlab.criome.net",
+      "matrixId": "@aria:fieldlab.criome.net",
+      "gitSigningKey": null,
+      "useColemak": true,
+      "useFastRepeat": true,
+      "isMultimediaDev": false,
+      "isCodeDev": true,
+      "preferredEditor": "Emacs",
+      "textSize": "Medium",
+      "sshPubKeys": [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
+      ],
+      "sshPubKey": null,
+      "extraGroups": [
+        "audio",
+        "video",
+        "adbusers",
+        "nixdev",
+        "systemd-journal",
+        "dialout",
+        "plugdev",
+        "power",
+        "storage",
+        "libvirtd"
+      ],
+      "enableLinger": true
+    }
+  }
 }
