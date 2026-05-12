@@ -1,0 +1,114 @@
+;; fieldlab — synthetic cluster proposal for CriomOS regression tests.
+;; The names are fixture data only. No production node names belong here.
+
+(ClusterProposal
+  [
+    (Entry atlas (NodeProposal
+      LargeAiRouter
+      Max
+      Max
+      (Machine Metal X86_64 8 "fixture-router" None None None None 64)
+      (Io
+        Qwerty
+        Uefi
+        [
+          (Entry "/" (Disk "/dev/disk/by-label/FIELDLAB_ATLAS" Ext4 []))
+        ]
+        [])
+      (NodePubKeys
+        "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000"
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        (YggPubKeyEntry
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          "200:db8:1::1"
+          "300:db8:1::"))
+      []
+      "10.77.0.1/24"
+      None
+      false
+      false
+      []
+      false
+      false
+      (RouterInterfaces wan0 wlan0 TwoG 6 Wifi6)
+      true
+      8
+      (NodeServices Client Server)))
+
+    (Entry beacon (NodeProposal
+      MediaBroadcast
+      Medium
+      Max
+      (Machine Metal X86_64 6 "fixture-builder" None None None None 32)
+      (Io
+        Qwerty
+        Uefi
+        [
+          (Entry "/" (Disk "/dev/disk/by-label/FIELDLAB_BEACON" Ext4 []))
+        ]
+        [])
+      (NodePubKeys
+        "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000"
+        "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+        (YggPubKeyEntry
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          "200:db8:1::2"
+          "300:db8:1:1::"))
+      []
+      "10.77.0.2/24"
+      None
+      false
+      false
+      []
+      false
+      false
+      None
+      true
+      4
+      (NodeServices Client None)))
+
+    (Entry cedar (NodeProposal
+      Edge
+      Medium
+      Max
+      (Machine Metal X86_64 4 ThinkPadT14Gen2Intel None None None 12 16)
+      (Io
+        Colemak
+        Uefi
+        [
+          (Entry "/" (Disk "/dev/disk/by-label/FIELDLAB_CEDAR" Ext4 []))
+        ]
+        [])
+      (NodePubKeys
+        "AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
+        "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+        (YggPubKeyEntry
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          "200:db8:1::3"
+          "300:db8:1:2::"))
+      []
+      "10.77.0.3/24"
+      None
+      false
+      true
+      []
+      false
+      true
+      None
+      true
+      2
+      (NodeServices Client None)))
+  ]
+
+  []
+  []
+
+  (ClusterTrust
+    Max
+    []
+    [
+      (Entry atlas Max)
+      (Entry beacon Max)
+      (Entry cedar Max)
+    ]
+    []))

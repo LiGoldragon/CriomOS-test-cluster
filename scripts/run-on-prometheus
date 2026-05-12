@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+host="${1:-prometheus.goldragon.criome}"
+repo="github:LiGoldragon/CriomOS-test-cluster"
+
+jj git push --bookmark main
+
+ssh "$host" 'bash -s' <<'REMOTE'
+set -euo pipefail
+
+repo="github:LiGoldragon/CriomOS-test-cluster"
+sandbox="$(mktemp -d -t criomos-test-cluster.XXXXXX)"
+mkdir -p "$sandbox/home" "$sandbox/work" "$sandbox/state" "$sandbox/artifacts"
+
+cat >"$sandbox/artifacts/run.nota" <<EOF
+(CriomOSTestClusterRun
+  (Repo "$repo")
+  (Sandbox "$sandbox"))
+EOF
+
+systemd-run \
+  --user \
+  --wait \
+  --collect \
+  --service-type=exec \
+  --setenv=HOME="$sandbox/home" \
+  --property=PrivateUsers=yes \
+  --property=ProtectHome=tmpfs \
+  --property=WorkingDirectory="$sandbox/work" \
+  --property=ReadWritePaths="$sandbox" \
+  -- \
+  nix flake check "$repo" --refresh --print-build-logs
+
+printf 'criomos-test-cluster prometheus sandbox passed: %s\n' "$sandbox"
+REMOTE

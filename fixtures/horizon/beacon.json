@@ -1,0 +1,346 @@
+{
+  "cluster": {
+    "name": "fieldlab",
+    "trustedBuildPubKeys": [
+      "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "cedar.fieldlab.criome:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+    ]
+  },
+  "node": {
+    "name": "beacon",
+    "species": "MediaBroadcast",
+    "size": {
+      "min": true,
+      "medium": true,
+      "large": false,
+      "max": false
+    },
+    "trust": {
+      "min": true,
+      "medium": true,
+      "large": true,
+      "max": true
+    },
+    "machine": {
+      "species": "Metal",
+      "arch": "X86_64",
+      "cores": 6,
+      "model": "fixture-builder",
+      "motherBoard": null,
+      "superNode": null,
+      "superUser": null,
+      "chipGen": null,
+      "ramGb": 32
+    },
+    "linkLocalIps": [],
+    "nodeIp": "10.77.0.2/24",
+    "wireguardPubKey": null,
+    "nordvpn": false,
+    "wifiCert": false,
+    "wantsPrinting": false,
+    "wantsHwVideoAccel": false,
+    "routerInterfaces": null,
+    "services": {
+      "tailnet": "Client",
+      "tailnetController": null
+    },
+    "criomeDomainName": "beacon.fieldlab.criome",
+    "system": "X86_64Linux",
+    "maxJobs": 4,
+    "buildCores": 4,
+    "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+    "nixPubKey": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "yggPubKey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "yggAddress": "200:db8:1::2",
+    "yggSubnet": "300:db8:1:1::",
+    "isFullyTrusted": true,
+    "isRemoteNixBuilder": true,
+    "isDispatcher": true,
+    "isNixCache": false,
+    "isLargeEdge": false,
+    "enableNetworkManager": true,
+    "hasNixPubKey": true,
+    "hasYggPubKey": true,
+    "hasSshPubKey": true,
+    "hasWireguardPubKey": false,
+    "hasNordvpnPubKey": false,
+    "hasWifiCertPubKey": false,
+    "hasBasePubKeys": true,
+    "hasVideoOutput": false,
+    "chipIsIntel": true,
+    "modelIsThinkpad": false,
+    "handleLidSwitch": "suspend",
+    "handleLidSwitchExternalPower": "lock",
+    "handleLidSwitchDocked": "ignore",
+    "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+    "nixPubKeyLine": "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "nixCacheDomain": null,
+    "nixUrl": null,
+    "behavesAs": {
+      "center": false,
+      "router": false,
+      "edge": false,
+      "nextGen": false,
+      "lowPower": false,
+      "bareMetal": true,
+      "virtualMachine": false,
+      "iso": false,
+      "largeAi": false
+    },
+    "typeIs": {
+      "center": false,
+      "edge": false,
+      "edgeTesting": false,
+      "hybrid": false,
+      "largeAi": false,
+      "largeAiRouter": false,
+      "mediaBroadcast": true,
+      "router": false,
+      "routerTesting": false
+    },
+    "io": {
+      "keyboard": "Qwerty",
+      "bootloader": "Uefi",
+      "disks": {
+        "/": {
+          "device": "/dev/disk/by-label/FIELDLAB_BEACON",
+          "fsType": "Ext4",
+          "options": []
+        }
+      },
+      "swapDevices": []
+    },
+    "useColemak": false,
+    "computerIs": {
+      "thinkpadT14Gen2Intel": false,
+      "thinkpadT14Gen5Intel": false,
+      "thinkpadX230": false,
+      "thinkpadX240": false,
+      "rpi3b": false
+    },
+    "builderConfigs": [
+      {
+        "hostName": "atlas.fieldlab.criome",
+        "sshUser": "nix-ssh",
+        "sshKey": "/etc/ssh/ssh_host_ed25519_key",
+        "supportedFeatures": [
+          "big-parallel",
+          "kvm"
+        ],
+        "system": "X86_64Linux",
+        "systems": [],
+        "maxJobs": 8,
+        "publicHostKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+        "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000"
+      }
+    ],
+    "cacheUrls": [
+      "http://nix.atlas.fieldlab.criome"
+    ],
+    "exNodesSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
+    ],
+    "dispatchersSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
+    ],
+    "adminSshPubKeys": [],
+    "wireguardUntrustedProxies": []
+  },
+  "exNodes": {
+    "atlas": {
+      "name": "atlas",
+      "species": "LargeAiRouter",
+      "size": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Metal",
+        "arch": "X86_64",
+        "cores": 8,
+        "model": "fixture-router",
+        "motherBoard": null,
+        "superNode": null,
+        "superUser": null,
+        "chipGen": null,
+        "ramGb": 64
+      },
+      "linkLocalIps": [],
+      "nodeIp": "10.77.0.1/24",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": {
+        "wan": "wan0",
+        "wlan": "wlan0",
+        "wlanBand": "2g",
+        "wlanChannel": 6,
+        "wlanStandard": "wifi6"
+      },
+      "services": {
+        "tailnet": "Client",
+        "tailnetController": "Server"
+      },
+      "criomeDomainName": "atlas.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 8,
+      "buildCores": 8,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "nixPubKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "yggPubKey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "yggAddress": "200:db8:1::1",
+      "yggSubnet": "300:db8:1::",
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": true,
+      "isDispatcher": false,
+      "isNixCache": true,
+      "isLargeEdge": false,
+      "enableNetworkManager": false,
+      "hasNixPubKey": true,
+      "hasYggPubKey": true,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": true,
+      "hasVideoOutput": false,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "ignore",
+      "handleLidSwitchExternalPower": "ignore",
+      "handleLidSwitchDocked": "ignore",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "nixPubKeyLine": "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "nixCacheDomain": "nix.atlas.fieldlab.criome",
+      "nixUrl": "http://nix.atlas.fieldlab.criome",
+      "behavesAs": {
+        "center": true,
+        "router": true,
+        "edge": false,
+        "nextGen": false,
+        "lowPower": false,
+        "bareMetal": true,
+        "virtualMachine": false,
+        "iso": false,
+        "largeAi": true
+      },
+      "typeIs": {
+        "center": false,
+        "edge": false,
+        "edgeTesting": false,
+        "hybrid": false,
+        "largeAi": false,
+        "largeAiRouter": true,
+        "mediaBroadcast": false,
+        "router": false,
+        "routerTesting": false
+      }
+    },
+    "cedar": {
+      "name": "cedar",
+      "species": "Edge",
+      "size": {
+        "min": true,
+        "medium": true,
+        "large": false,
+        "max": false
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Metal",
+        "arch": "X86_64",
+        "cores": 4,
+        "model": "ThinkPadT14Gen2Intel",
+        "motherBoard": null,
+        "superNode": null,
+        "superUser": null,
+        "chipGen": 12,
+        "ramGb": 16
+      },
+      "linkLocalIps": [],
+      "nodeIp": "10.77.0.3/24",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": true,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": true,
+      "routerInterfaces": null,
+      "services": {
+        "tailnet": "Client",
+        "tailnetController": null
+      },
+      "criomeDomainName": "cedar.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 2,
+      "buildCores": 2,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
+      "nixPubKey": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "yggPubKey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "yggAddress": "200:db8:1::3",
+      "yggSubnet": "300:db8:1:2::",
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": false,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": true,
+      "hasYggPubKey": true,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": true,
+      "hasBasePubKeys": true,
+      "hasVideoOutput": true,
+      "chipIsIntel": true,
+      "modelIsThinkpad": true,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "suspend",
+      "handleLidSwitchDocked": "lock",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
+      "nixPubKeyLine": "cedar.fieldlab.criome:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
+        "center": false,
+        "router": false,
+        "edge": true,
+        "nextGen": false,
+        "lowPower": true,
+        "bareMetal": true,
+        "virtualMachine": false,
+        "iso": false,
+        "largeAi": false
+      },
+      "typeIs": {
+        "center": false,
+        "edge": true,
+        "edgeTesting": false,
+        "hybrid": false,
+        "largeAi": false,
+        "largeAiRouter": false,
+        "mediaBroadcast": false,
+        "router": false,
+        "routerTesting": false
+      }
+    }
+  },
+  "users": {}
+}
