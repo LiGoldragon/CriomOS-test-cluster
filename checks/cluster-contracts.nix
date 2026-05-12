@@ -14,6 +14,29 @@ let
 
   readHorizon = node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
 
+  rewriteDomainSuffix =
+    from: to: node:
+    node
+    // {
+      criomeDomainName = lib.replaceStrings [ from ] [ to ] node.criomeDomainName;
+      nixCacheDomain =
+        if node.nixCacheDomain == null then
+          null
+        else
+          lib.replaceStrings [ from ] [ to ] node.nixCacheDomain;
+    };
+
+  withDomainSuffix =
+    horizon: from: to:
+    let
+      rewriteNode = rewriteDomainSuffix from to;
+    in
+    horizon
+    // {
+      node = rewriteNode horizon.node;
+      exNodes = lib.mapAttrs (_: rewriteNode) horizon.exNodes;
+    };
+
   configurationFor =
     horizon: modules:
     (lib.nixosSystem {
@@ -36,6 +59,12 @@ let
     (criomosModule "network/default.nix")
     (criomosModule "router/default.nix")
   ];
+  atlasAlternateDomainNetwork =
+    configurationFor (withDomainSuffix atlas ".fieldlab.criome" ".fieldlab.test")
+      [
+        (criomosModule "network/default.nix")
+        (criomosModule "router/default.nix")
+      ];
   cedarNetwork = configurationFor cedar [
     (criomosModule "network/default.nix")
   ];
@@ -67,6 +96,9 @@ pkgs.runCommand "cluster-contracts" { } ''
   test ${lib.escapeShellArg (bool atlasNetwork.services.dnsmasq.enable)} = true
   echo ${lib.escapeShellArg (builtins.toJSON atlasNetwork.services.dnsmasq.settings.server)} \
     | grep -F '/tailnet.fieldlab.criome/100.100.100.100'
+  test ${lib.escapeShellArg atlasAlternateDomainNetwork.services.headscale.settings.dns.base_domain} = tailnet.fieldlab.test
+  echo ${lib.escapeShellArg (builtins.toJSON atlasAlternateDomainNetwork.services.dnsmasq.settings.server)} \
+    | grep -F '/tailnet.fieldlab.test/100.100.100.100'
 
   test ${lib.escapeShellArg (bool cedarNetwork.services.tailscale.enable)} = true
   test ${lib.escapeShellArg (bool (cedarNetwork.services.headscale.enable or false))} = false

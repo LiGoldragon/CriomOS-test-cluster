@@ -30,7 +30,13 @@ let
     "lib.elem node.name"
   ];
 
-  forbiddenFragments = forbiddenHostFacts ++ forbiddenPredicateFragments;
+  forbiddenClusterDomainFragments = [
+    "tailnet.\${cluster.name}.criome"
+    ".\${cluster.name}.criome"
+  ];
+
+  forbiddenFragments =
+    forbiddenHostFacts ++ forbiddenPredicateFragments ++ forbiddenClusterDomainFragments;
 
   scanFile =
     path:
@@ -55,7 +61,7 @@ in
 pkgs.runCommand "source-constraints" { } ''
   set -eu
   if [ -s ${offenderReport} ]; then
-    echo "CriomOS module source contains forbidden host facts or node-name predicates:" >&2
+    echo "CriomOS module source contains forbidden host facts, node-name predicates, or fixed cluster domains:" >&2
     cat ${offenderReport} >&2
     exit 1
   fi
