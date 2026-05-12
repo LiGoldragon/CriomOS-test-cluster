@@ -98,6 +98,38 @@
       true
       2
       (NodeServices Client None)))
+
+    (Entry dune (NodeProposal
+      Edge
+      Min
+      Max
+      (Machine Pod X86_64 2 "fixture-pod" None atlas aria None 4)
+      (Io
+        Qwerty
+        Uefi
+        [
+          (Entry "/" (Disk "tmpfs" Tmpfs []))
+        ]
+        [])
+      (NodePubKeys
+        "AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
+        "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        (YggPubKeyEntry
+          "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          "200:db8:1::4"
+          "300:db8:1:3::"))
+      []
+      "10.77.0.4/24"
+      None
+      false
+      false
+      []
+      false
+      false
+      None
+      true
+      1
+      (NodeServices Client None)))
   ]
 
   [
@@ -125,6 +157,7 @@
       (Entry atlas Max)
       (Entry beacon Max)
       (Entry cedar Max)
+      (Entry dune Max)
     ]
     [
       (Entry aria Max)

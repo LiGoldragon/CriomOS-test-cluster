@@ -39,3 +39,13 @@ nix run .#run-on-prometheus
 The runner pushes the current `main` bookmark, then asks Prometheus to
 evaluate the public GitHub flake under `PrivateUsers=yes`,
 `ProtectHome=tmpfs`, and a fresh writable sandbox directory.
+
+The heavier toplevel build runner is separate from the default check
+runner:
+
+```sh
+nix run .#build-dune-on-prometheus
+```
+
+It builds the synthetic Pod node `dune` system toplevel from the public GitHub
+flake inside the same kind of transient sandbox.

@@ -4,7 +4,8 @@
     "trustedBuildPubKeys": [
       "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-      "cedar.fieldlab.criome:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      "cedar.fieldlab.criome:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+      "dune.fieldlab.criome:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
     ]
   },
   "node": {
@@ -154,10 +155,12 @@
     ],
     "exNodesSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
     ],
     "dispatchersSshPubKeys": [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
     ],
     "adminSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
@@ -353,6 +356,99 @@
         "largeAi": false,
         "largeAiRouter": false,
         "mediaBroadcast": true,
+        "router": false,
+        "routerTesting": false
+      }
+    },
+    "dune": {
+      "name": "dune",
+      "species": "Edge",
+      "size": {
+        "min": true,
+        "medium": false,
+        "large": false,
+        "max": false
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Pod",
+        "arch": "X86_64",
+        "cores": 2,
+        "model": "fixture-pod",
+        "motherBoard": null,
+        "superNode": "atlas",
+        "superUser": "aria",
+        "chipGen": null,
+        "ramGb": 4
+      },
+      "linkLocalIps": [],
+      "nodeIp": "10.77.0.4/24",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": null,
+      "services": {
+        "tailnet": "Client",
+        "tailnetController": null
+      },
+      "criomeDomainName": "dune.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 1,
+      "buildCores": 1,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
+      "nixPubKey": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "yggPubKey": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "yggAddress": "200:db8:1::4",
+      "yggSubnet": "300:db8:1:3::",
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": false,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": true,
+      "hasYggPubKey": true,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": true,
+      "hasVideoOutput": true,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "suspend",
+      "handleLidSwitchDocked": "lock",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
+      "nixPubKeyLine": "dune.fieldlab.criome:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
+        "center": false,
+        "router": false,
+        "edge": true,
+        "nextGen": false,
+        "lowPower": true,
+        "bareMetal": false,
+        "virtualMachine": true,
+        "iso": false,
+        "largeAi": false
+      },
+      "typeIs": {
+        "center": false,
+        "edge": true,
+        "edgeTesting": false,
+        "hybrid": false,
+        "largeAi": false,
+        "largeAiRouter": false,
+        "mediaBroadcast": false,
         "router": false,
         "routerTesting": false
       }

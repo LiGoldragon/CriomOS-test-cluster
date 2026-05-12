@@ -1385,8 +1385,24 @@
     },
     "root": {
       "inputs": {
+        "brightness-ctl": [
+          "criomos",
+          "brightness-ctl"
+        ],
+        "clavifaber": [
+          "criomos",
+          "clavifaber"
+        ],
         "criomos": "criomos",
+        "criomos-home": [
+          "criomos",
+          "criomos-home"
+        ],
         "criomos-lib": "criomos-lib",
+        "home-manager": [
+          "criomos",
+          "home-manager"
+        ],
         "horizon": "horizon_2",
         "nixpkgs": "nixpkgs"
       }

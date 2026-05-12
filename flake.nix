@@ -10,6 +10,11 @@
 
     criomos-lib.url = "github:LiGoldragon/CriomOS-lib";
 
+    brightness-ctl.follows = "criomos/brightness-ctl";
+    clavifaber.follows = "criomos/clavifaber";
+    criomos-home.follows = "criomos/criomos-home";
+    home-manager.follows = "criomos/home-manager";
+
     horizon.url = "github:LiGoldragon/horizon-rs";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -33,7 +38,7 @@
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
             set -eu
-            for node in atlas beacon cedar; do
+            for node in atlas beacon cedar dune; do
               ${horizonCli}/bin/horizon-cli \
                 --cluster fieldlab \
                 --node "$node" \
@@ -78,8 +83,38 @@
         system:
         let
           pkgs = inputs.nixpkgs.legacyPackages.${system};
+          constants = inputs.criomos-lib.lib.constants;
+          fixtureHorizon =
+            node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
+          fixtureSystem =
+            node:
+            (inputs.nixpkgs.lib.nixosSystem {
+              inherit system;
+              specialArgs = {
+                inherit constants inputs;
+                horizon = fixtureHorizon node;
+                deployment = {
+                  includeHome = false;
+                };
+              };
+              modules = [
+                inputs.criomos.nixosModules.criomos
+              ];
+            }).config.system.build.toplevel;
         in
         {
+          dune-toplevel = fixtureSystem "dune";
+
+          build-dune-on-prometheus = pkgs.writeShellApplication {
+            name = "build-dune-on-prometheus";
+            runtimeInputs = [
+              pkgs.jujutsu
+              pkgs.openssh
+              pkgs.bash
+            ];
+            text = builtins.readFile ./scripts/build-dune-on-prometheus;
+          };
+
           run-on-prometheus = pkgs.writeShellApplication {
             name = "run-on-prometheus";
             runtimeInputs = [
@@ -93,6 +128,11 @@
       );
 
       apps = forSystems (system: {
+        build-dune-on-prometheus = {
+          type = "app";
+          program = "${self.packages.${system}.build-dune-on-prometheus}/bin/build-dune-on-prometheus";
+        };
+
         run-on-prometheus = {
           type = "app";
           program = "${self.packages.${system}.run-on-prometheus}/bin/run-on-prometheus";
