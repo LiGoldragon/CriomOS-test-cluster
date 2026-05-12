@@ -10,26 +10,44 @@ set -euo pipefail
 
 repo="github:LiGoldragon/CriomOS-test-cluster"
 sandbox="$(mktemp -d -t criomos-test-cluster.XXXXXX)"
-mkdir -p "$sandbox/home" "$sandbox/work" "$sandbox/state" "$sandbox/artifacts"
+unit="criomos-test-cluster-$(date +%s)-$$"
+mkdir -p \
+  "$sandbox/home" \
+  "$sandbox/work" \
+  "$sandbox/state/cache" \
+  "$sandbox/state/config" \
+  "$sandbox/state/data" \
+  "$sandbox/artifacts"
 
 cat >"$sandbox/artifacts/run.nota" <<EOF
 (CriomOSTestClusterRun
   (Repo "$repo")
-  (Sandbox "$sandbox"))
+  (Sandbox "$sandbox")
+  (Unit "$unit"))
 EOF
 
-systemd-run \
-  --user \
-  --wait \
-  --collect \
-  --service-type=exec \
-  --setenv=HOME="$sandbox/home" \
-  --property=PrivateUsers=yes \
-  --property=ProtectHome=tmpfs \
-  --property=WorkingDirectory="$sandbox/work" \
-  --property=ReadWritePaths="$sandbox" \
-  -- \
-  nix flake check "$repo" --refresh --print-build-logs
+if ! systemd-run \
+    --user \
+    --wait \
+    --collect \
+    --service-type=exec \
+    --unit="$unit" \
+    --pipe \
+    --setenv=HOME="$sandbox/home" \
+    --setenv=XDG_CACHE_HOME="$sandbox/state/cache" \
+    --setenv=XDG_CONFIG_HOME="$sandbox/state/config" \
+    --setenv=XDG_DATA_HOME="$sandbox/state/data" \
+    --property=PrivateUsers=yes \
+    --property=ProtectHome=tmpfs \
+    --property=WorkingDirectory="$sandbox/work" \
+    --property=ReadWritePaths="$sandbox" \
+    -- \
+    nix flake check "$repo" --refresh --print-build-logs --show-trace; then
+  journalctl --user -u "$unit.service" -n 300 --no-pager \
+    > "$sandbox/artifacts/journal.txt" || true
+  cat "$sandbox/artifacts/journal.txt" >&2 || true
+  exit 1
+fi
 
 printf 'criomos-test-cluster prometheus sandbox passed: %s\n' "$sandbox"
 REMOTE
