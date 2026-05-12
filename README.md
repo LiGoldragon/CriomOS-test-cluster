@@ -22,6 +22,8 @@ The pure checks cover:
   projected Horizon roles.
 - Wi-Fi EAP-TLS client profile setup for a node that declares a Wi-Fi
   certificate.
+- CriomOS module source constraints against production host facts and
+  node-name predicates.
 
 ## Prometheus
 

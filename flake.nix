@@ -63,6 +63,10 @@
           cluster-contracts = pkgs.callPackage ./checks/cluster-contracts.nix {
             inherit inputs self system;
           };
+
+          source-constraints = pkgs.callPackage ./checks/source-constraints.nix {
+            inherit inputs;
+          };
         }
       );
 
