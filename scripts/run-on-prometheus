@@ -33,6 +33,7 @@ if ! systemd-run \
     --service-type=exec \
     --unit="$unit" \
     --pipe \
+    --setenv=PATH=/run/current-system/sw/bin \
     --setenv=HOME="$sandbox/home" \
     --setenv=XDG_CACHE_HOME="$sandbox/state/cache" \
     --setenv=XDG_CONFIG_HOME="$sandbox/state/config" \
