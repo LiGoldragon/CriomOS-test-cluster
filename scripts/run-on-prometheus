@@ -2,7 +2,6 @@
 set -euo pipefail
 
 host="${1:-prometheus.goldragon.criome}"
-repo="github:LiGoldragon/CriomOS-test-cluster"
 
 jj git push --bookmark main
 
