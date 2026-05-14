@@ -49,3 +49,12 @@ nix run .#build-dune-on-prometheus
 
 It builds the synthetic Pod node `dune` system toplevel from the public GitHub
 flake inside the same kind of transient sandbox.
+
+The nspawn smoke runner builds a container-aware `dune` toplevel on Prometheus,
+starts it through the deployed `criomos-nspawn` interface from the invoking
+user, verifies the container hostname and system state, and tears the machine
+down:
+
+```sh
+nix run .#nspawn-dune-on-prometheus
+```

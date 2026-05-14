@@ -87,7 +87,7 @@
           fixtureHorizon =
             node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
           fixtureSystem =
-            node:
+            node: extraModules:
             (inputs.nixpkgs.lib.nixosSystem {
               inherit system;
               specialArgs = {
@@ -99,11 +99,21 @@
               };
               modules = [
                 inputs.criomos.nixosModules.criomos
-              ];
+              ]
+              ++ extraModules;
             }).config.system.build.toplevel;
         in
         {
-          dune-toplevel = fixtureSystem "dune";
+          dune-toplevel = fixtureSystem "dune" [ ];
+          dune-nspawn-toplevel = fixtureSystem "dune" [
+            (
+              { lib, ... }:
+              {
+                boot.isNspawnContainer = true;
+                networking.useHostResolvConf = lib.mkForce false;
+              }
+            )
+          ];
 
           build-dune-on-prometheus = pkgs.writeShellApplication {
             name = "build-dune-on-prometheus";
@@ -113,6 +123,16 @@
               pkgs.bash
             ];
             text = builtins.readFile ./scripts/build-dune-on-prometheus;
+          };
+
+          nspawn-dune-on-prometheus = pkgs.writeShellApplication {
+            name = "nspawn-dune-on-prometheus";
+            runtimeInputs = [
+              pkgs.jujutsu
+              pkgs.openssh
+              pkgs.bash
+            ];
+            text = builtins.readFile ./scripts/nspawn-dune-on-prometheus;
           };
 
           run-on-prometheus = pkgs.writeShellApplication {
@@ -131,6 +151,11 @@
         build-dune-on-prometheus = {
           type = "app";
           program = "${self.packages.${system}.build-dune-on-prometheus}/bin/build-dune-on-prometheus";
+        };
+
+        nspawn-dune-on-prometheus = {
+          type = "app";
+          program = "${self.packages.${system}.nspawn-dune-on-prometheus}/bin/nspawn-dune-on-prometheus";
         };
 
         run-on-prometheus = {

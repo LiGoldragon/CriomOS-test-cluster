@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+host="${1:-prometheus.goldragon.criome}"
+
+jj git push --bookmark main
+
+ssh "$host" 'bash -s' <<'REMOTE'
+set -euo pipefail
+
+machine=dune
+repo="github:LiGoldragon/CriomOS-test-cluster"
+
+cleanup() {
+  criomos-nspawn terminate "$machine" >/dev/null 2>&1 || true
+  criomos-nspawn remove "$machine" >/dev/null 2>&1 || true
+}
+
+printf 'runner user: %s\n' "$(whoami)"
+printf 'runner groups: %s\n' "$(groups)"
+command -v criomos-nspawn
+grep -F '/run/wrappers/bin/sudo' /run/current-system/sw/bin/criomos-nspawn
+
+system_path="$(nix build "$repo#dune-nspawn-toplevel" --refresh --no-link --print-out-paths -L)"
+printf 'built dune nspawn system: %s\n' "$system_path"
+
+cleanup
+trap cleanup EXIT
+
+criomos-nspawn create "$machine" "$system_path"
+criomos-nspawn start "$machine"
+
+for attempt in $(seq 1 30); do
+  if criomos-nspawn shell "$machine" hostname >/tmp/criomos-dune-hostname 2>/tmp/criomos-dune-hostname.err; then
+    break
+  fi
+  if [ "$attempt" -eq 30 ]; then
+    cat /tmp/criomos-dune-hostname.err >&2 || true
+    exit 1
+  fi
+  sleep 1
+done
+
+hostname="$(cat /tmp/criomos-dune-hostname)"
+test "$hostname" = dune
+printf 'container hostname: %s\n' "$hostname"
+
+criomos-nspawn status "$machine"
+criomos-nspawn ip "$machine"
+
+if ! timeout 45 criomos-nspawn shell "$machine" systemctl is-system-running --wait; then
+  criomos-nspawn shell "$machine" systemctl --failed --no-pager || true
+  exit 1
+fi
+
+criomos-nspawn shell "$machine" systemctl --failed --no-pager
+printf 'dune nspawn smoke passed\n'
+REMOTE
