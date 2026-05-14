@@ -111,6 +111,11 @@
               {
                 boot.isNspawnContainer = true;
                 networking.useHostResolvConf = lib.mkForce false;
+                programs.regreet.enable = lib.mkForce false;
+                services.greetd.enable = lib.mkForce false;
+                services.yggdrasil.enable = lib.mkForce false;
+                systemd.services.complex-init.enable = lib.mkForce false;
+                systemd.services.wpa_supplicant.enable = lib.mkForce false;
               }
             )
           ];
