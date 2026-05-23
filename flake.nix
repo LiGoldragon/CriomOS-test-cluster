@@ -65,6 +65,22 @@
                 touch "$out"
               '';
 
+          pod-missing-super-node-rejected =
+            pkgs.runCommand "pod-missing-super-node-rejected" { }
+              ''
+                set -eu
+                if ${horizonCli}/bin/horizon-cli \
+                  --cluster fieldlab \
+                  --node atlas \
+                  < ${./clusters/fieldlab-pod-missing-super-node.nota} \
+                  > "$out.unexpected" 2>"$out.err"; then
+                  cat "$out.unexpected" >&2
+                  exit 1
+                fi
+                grep -F 'references missing super-node' "$out.err"
+                touch "$out"
+              '';
+
           cluster-contracts = pkgs.callPackage ./checks/cluster-contracts.nix {
             inherit inputs self system;
           };
