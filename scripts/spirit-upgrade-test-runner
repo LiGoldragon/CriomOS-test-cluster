@@ -1,0 +1,85 @@
+set -euo pipefail
+
+# Operator end-to-end path for the Spirit nspawn upgrade acceptance gate.
+# Runs inside a criomos-nspawn container created by
+# nspawn-spirit-upgrade-on-prometheus.
+#
+# Sequence:
+#   1. Start persona-spirit-daemon v0.1.0 with an explicit NOTA config.
+#   2. Write N synthetic records through the v0.1.0 spirit CLI.
+#   3. Stop v0.1.0 so the redb file is closed.
+#   4. Run upgrade-spirit-sandbox-test against the copied database path.
+#   5. Assert the migrated/readable counts match N.
+
+RECORD_COUNT="${1:-10}"
+WORK="${TMPDIR:-/tmp}/spirit-upgrade-test"
+rm -rf "$WORK"
+mkdir -p "$WORK"
+
+ORDINARY_SOCK="$WORK/ordinary.sock"
+OWNER_SOCK="$WORK/owner.sock"
+DB_PATH="$WORK/persona-spirit-v010.redb"
+SOCKET_MODE=384
+
+export PERSONA_SPIRIT_SOCKET="$ORDINARY_SOCK"
+export PERSONA_SPIRIT_OWNER_SOCKET="$OWNER_SOCK"
+
+printf '[runner] container hostname: %s\n' "$(hostname)"
+printf '[runner] record count: %s\n' "$RECORD_COUNT"
+printf '[runner] work directory: %s\n' "$WORK"
+printf '[runner] v0.1.0 redb path: %s\n' "$DB_PATH"
+
+DAEMON_CONFIG_V010="(\"$ORDINARY_SOCK\" \"$OWNER_SOCK\" \"$DB_PATH\" $SOCKET_MODE None)"
+printf '[runner] daemon config: %s\n' "$DAEMON_CONFIG_V010"
+
+persona-spirit-daemon-v010 "$DAEMON_CONFIG_V010" >"$WORK/daemon-v010.log" 2>&1 &
+DAEMON_PID=$!
+trap 'kill "$DAEMON_PID" 2>/dev/null || true' EXIT
+
+for _ in $(seq 1 60); do
+  if [ -S "$ORDINARY_SOCK" ]; then
+    break
+  fi
+  sleep 0.1
+done
+
+if [ ! -S "$ORDINARY_SOCK" ]; then
+  printf '[runner] daemon socket %s never appeared\n' "$ORDINARY_SOCK" >&2
+  printf '[runner] daemon log:\n' >&2
+  cat "$WORK/daemon-v010.log" >&2 || true
+  exit 1
+fi
+
+printf '[runner] v0.1.0 daemon up, writing %s records\n' "$RECORD_COUNT"
+
+for i in $(seq 1 "$RECORD_COUNT"); do
+  spirit-v010 \
+    "(Record (operator-spirit-nspawn-test Decision \"synthetic test record $i\" \"operator nspawn pilot context $i\" Maximum \"verbatim synthetic quote $i\"))" \
+    >/dev/null
+done
+
+spirit-v010 '(Observe (Records (None None SummaryOnly)))' >"$WORK/pre-upgrade.nota" 2>"$WORK/pre-upgrade.err" || true
+
+kill "$DAEMON_PID"
+wait "$DAEMON_PID" 2>/dev/null || true
+trap - EXIT
+
+if [ ! -f "$DB_PATH" ]; then
+  printf '[runner] no v0.1.0 redb at %s\n' "$DB_PATH" >&2
+  find "$WORK" -type f >&2 || true
+  exit 1
+fi
+
+printf '[runner] v0.1.0 redb: %s (%s bytes)\n' "$DB_PATH" "$(stat -c %s "$DB_PATH")"
+
+UPGRADE_OUTPUT="$(upgrade-spirit-sandbox-test "$DB_PATH")"
+printf '[runner] upgrade output:\n%s\n' "$UPGRADE_OUTPUT"
+
+EXPECTED="(SandboxUpgradeSucceeded $RECORD_COUNT $RECORD_COUNT "
+if printf '%s' "$UPGRADE_OUTPUT" | grep -qF "$EXPECTED"; then
+  printf '[runner] spirit-nspawn upgrade test passed with %s records\n' "$RECORD_COUNT"
+  exit 0
+fi
+
+printf '[runner] spirit-nspawn upgrade test failed; expected count prefix %s in output\n' "$EXPECTED" >&2
+exit 1

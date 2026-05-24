@@ -17,6 +17,11 @@
 
     horizon.url = "github:LiGoldragon/horizon-rs";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
+
+    persona-spirit.url = "github:LiGoldragon/persona-spirit";
+    persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
+
+    upgrade.url = "github:LiGoldragon/upgrade";
   };
 
   outputs =
@@ -65,21 +70,19 @@
                 touch "$out"
               '';
 
-          pod-missing-super-node-rejected =
-            pkgs.runCommand "pod-missing-super-node-rejected" { }
-              ''
-                set -eu
-                if ${horizonCli}/bin/horizon-cli \
-                  --cluster fieldlab \
-                  --node atlas \
-                  < ${./clusters/fieldlab-pod-missing-super-node.nota} \
-                  > "$out.unexpected" 2>"$out.err"; then
-                  cat "$out.unexpected" >&2
-                  exit 1
-                fi
-                grep -F 'references missing super-node' "$out.err"
-                touch "$out"
-              '';
+          pod-missing-super-node-rejected = pkgs.runCommand "pod-missing-super-node-rejected" { } ''
+            set -eu
+            if ${horizonCli}/bin/horizon-cli \
+              --cluster fieldlab \
+              --node atlas \
+              < ${./clusters/fieldlab-pod-missing-super-node.nota} \
+              > "$out.unexpected" 2>"$out.err"; then
+              cat "$out.unexpected" >&2
+              exit 1
+            fi
+            grep -F 'references missing super-node' "$out.err"
+            touch "$out"
+          '';
 
           cluster-contracts = pkgs.callPackage ./checks/cluster-contracts.nix {
             inherit inputs self system;
@@ -92,6 +95,12 @@
           source-constraints = pkgs.callPackage ./checks/source-constraints.nix {
             inherit inputs;
           };
+
+          spirit-nspawn-can-build = pkgs.runCommand "spirit-nspawn-can-build" { } ''
+            test -x ${self.packages.${system}.spirit-nspawn-toplevel}/init
+            test -e ${self.packages.${system}.spirit-nspawn-toplevel}/etc/os-release
+            touch "$out"
+          '';
         }
       );
 
@@ -118,6 +127,66 @@
               ]
               ++ extraModules;
             }).config.system.build.toplevel;
+
+          spirit010 = inputs.persona-spirit-v010.packages.${system};
+          spirit011 = inputs.persona-spirit.packages.${system};
+          upgradePackage = inputs.upgrade.packages.${system}.default;
+
+          spiritV010Wrappers = [
+            (pkgs.writeShellScriptBin "spirit-v010" ''
+              exec ${spirit010.spirit}/bin/spirit "$@"
+            '')
+            (pkgs.writeShellScriptBin "persona-spirit-daemon-v010" ''
+              exec ${spirit010.persona-spirit-daemon}/bin/persona-spirit-daemon "$@"
+            '')
+          ];
+
+          spiritUpgradeTestRunner = pkgs.writeShellApplication {
+            name = "spirit-upgrade-test-runner";
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.findutils
+              pkgs.gnugrep
+              spirit011.spirit
+              spirit011.persona-spirit-daemon
+              upgradePackage
+            ]
+            ++ spiritV010Wrappers;
+            text = builtins.readFile ./scripts/spirit-upgrade-test-runner;
+          };
+
+          spirit-nspawn-toplevel =
+            (inputs.nixpkgs.lib.nixosSystem {
+              inherit system;
+              modules = [
+                (
+                  { lib, ... }:
+                  {
+                    boot.isContainer = true;
+
+                    networking.hostName = "spirit-upgrade-test";
+                    networking.useDHCP = lib.mkForce true;
+                    networking.firewall.enable = false;
+
+                    documentation.enable = false;
+                    documentation.nixos.enable = false;
+                    documentation.man.enable = false;
+
+                    services.openssh.enable = false;
+
+                    system.stateVersion = "25.05";
+
+                    environment.systemPackages = [
+                      spirit011.spirit
+                      spirit011.persona-spirit-daemon
+                      upgradePackage
+                      spiritUpgradeTestRunner
+                    ]
+                    ++ spiritV010Wrappers;
+                  }
+                )
+              ];
+            }).config.system.build.toplevel;
         in
         {
           dune-toplevel = fixtureSystem "dune" [ ];
@@ -135,6 +204,10 @@
               }
             )
           ];
+
+          inherit spirit-nspawn-toplevel;
+
+          spirit-upgrade-test-runner = spiritUpgradeTestRunner;
 
           build-dune-on-prometheus = pkgs.writeShellApplication {
             name = "build-dune-on-prometheus";
@@ -154,6 +227,16 @@
               pkgs.bash
             ];
             text = builtins.readFile ./scripts/nspawn-dune-on-prometheus;
+          };
+
+          nspawn-spirit-upgrade-on-prometheus = pkgs.writeShellApplication {
+            name = "nspawn-spirit-upgrade-on-prometheus";
+            runtimeInputs = [
+              pkgs.jujutsu
+              pkgs.openssh
+              pkgs.bash
+            ];
+            text = builtins.readFile ./scripts/nspawn-spirit-upgrade-on-prometheus;
           };
 
           run-on-prometheus = pkgs.writeShellApplication {
@@ -177,6 +260,13 @@
         nspawn-dune-on-prometheus = {
           type = "app";
           program = "${self.packages.${system}.nspawn-dune-on-prometheus}/bin/nspawn-dune-on-prometheus";
+        };
+
+        nspawn-spirit-upgrade-on-prometheus = {
+          type = "app";
+          program = "${
+            self.packages.${system}.nspawn-spirit-upgrade-on-prometheus
+          }/bin/nspawn-spirit-upgrade-on-prometheus";
         };
 
         run-on-prometheus = {
