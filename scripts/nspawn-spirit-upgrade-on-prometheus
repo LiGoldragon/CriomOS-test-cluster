@@ -16,7 +16,7 @@ ssh "$host" 'bash -s' "$record_count" <<'REMOTE'
 set -euo pipefail
 
 record_count="$1"
-machine="spirit-upgrade-test"
+machine="spirit-upg"
 repo="github:LiGoldragon/CriomOS-test-cluster"
 
 cleanup() {
