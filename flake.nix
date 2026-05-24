@@ -155,6 +155,11 @@
             text = builtins.readFile ./scripts/spirit-upgrade-test-runner;
           };
 
+          # Minimal NixOS toplevel for the Spirit nspawn upgrade test. The
+          # Spirit pilot only needs systemd plus the Spirit and upgrade
+          # binaries; using the full CriomOS module tree would pull in
+          # unrelated fixture drift while this test is proving Spirit's
+          # database migration path.
           spirit-nspawn-toplevel =
             (inputs.nixpkgs.lib.nixosSystem {
               inherit system;
