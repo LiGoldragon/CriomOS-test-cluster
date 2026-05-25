@@ -1,6 +1,7 @@
 {
   "cluster": {
     "name": "fieldlab",
+    "tailnetBaseDomain": "tailnet.fieldlab.criome",
     "trustedBuildPubKeys": [
       "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -46,12 +47,27 @@
       "wlan": "wlan0",
       "wlanBand": "2g",
       "wlanChannel": 6,
-      "wlanStandard": "wifi6"
+      "wlanStandard": "wifi6",
+      "wpa3SaePassword": {
+        "name": "routerWifiSaePasswords"
+      }
     },
-    "services": {
-      "tailnet": "Client",
-      "tailnetController": "Server"
-    },
+    "services": [
+      {
+        "TailnetClient": {}
+      },
+      {
+        "TailnetController": {}
+      },
+      {
+        "NixBuilder": {
+          "maximumJobs": 8
+        }
+      },
+      {
+        "NixCache": {}
+      }
+    ],
     "criomeDomainName": "atlas.fieldlab.criome",
     "system": "X86_64Linux",
     "maxJobs": 8,
@@ -140,6 +156,17 @@
         "maxJobs": 4,
         "publicHostKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
         "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000"
+      },
+      {
+        "hostName": "cedar.fieldlab.criome",
+        "sshUser": "nix-ssh",
+        "sshKey": "/etc/ssh/ssh_host_ed25519_key",
+        "supportedFeatures": [],
+        "system": "X86_64Linux",
+        "systems": [],
+        "maxJobs": 2,
+        "publicHostKey": "AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
+        "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
       }
     ],
     "cacheUrls": [],
@@ -193,10 +220,16 @@
       "wantsPrinting": false,
       "wantsHwVideoAccel": false,
       "routerInterfaces": null,
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": null
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 4
+          }
+        }
+      ],
       "criomeDomainName": "beacon.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 4,
@@ -286,10 +319,16 @@
       "wantsPrinting": false,
       "wantsHwVideoAccel": true,
       "routerInterfaces": null,
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": null
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 2
+          }
+        }
+      ],
       "criomeDomainName": "cedar.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 2,
@@ -300,7 +339,7 @@
       "yggAddress": "200:db8:1::3",
       "yggSubnet": "300:db8:1:2::",
       "isFullyTrusted": true,
-      "isRemoteNixBuilder": false,
+      "isRemoteNixBuilder": true,
       "isDispatcher": true,
       "isNixCache": false,
       "isLargeEdge": false,
@@ -379,10 +418,11 @@
       "wantsPrinting": false,
       "wantsHwVideoAccel": false,
       "routerInterfaces": null,
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": null
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        }
+      ],
       "criomeDomainName": "dune.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 1,

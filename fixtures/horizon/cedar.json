@@ -1,6 +1,7 @@
 {
   "cluster": {
     "name": "fieldlab",
+    "tailnetBaseDomain": "tailnet.fieldlab.criome",
     "trustedBuildPubKeys": [
       "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
@@ -42,10 +43,16 @@
     "wantsPrinting": false,
     "wantsHwVideoAccel": true,
     "routerInterfaces": null,
-    "services": {
-      "tailnet": "Client",
-      "tailnetController": null
-    },
+    "services": [
+      {
+        "TailnetClient": {}
+      },
+      {
+        "NixBuilder": {
+          "maximumJobs": 2
+        }
+      }
+    ],
     "criomeDomainName": "cedar.fieldlab.criome",
     "system": "X86_64Linux",
     "maxJobs": 2,
@@ -56,7 +63,7 @@
     "yggAddress": "200:db8:1::3",
     "yggSubnet": "300:db8:1:2::",
     "isFullyTrusted": true,
-    "isRemoteNixBuilder": false,
+    "isRemoteNixBuilder": true,
     "isDispatcher": true,
     "isNixCache": false,
     "isLargeEdge": false,
@@ -206,12 +213,27 @@
         "wlan": "wlan0",
         "wlanBand": "2g",
         "wlanChannel": 6,
-        "wlanStandard": "wifi6"
+        "wlanStandard": "wifi6",
+        "wpa3SaePassword": {
+          "name": "routerWifiSaePasswords"
+        }
       },
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": "Server"
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        },
+        {
+          "TailnetController": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 8
+          }
+        },
+        {
+          "NixCache": {}
+        }
+      ],
       "criomeDomainName": "atlas.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 8,
@@ -301,10 +323,16 @@
       "wantsPrinting": false,
       "wantsHwVideoAccel": false,
       "routerInterfaces": null,
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": null
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 4
+          }
+        }
+      ],
       "criomeDomainName": "beacon.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 4,
@@ -394,10 +422,11 @@
       "wantsPrinting": false,
       "wantsHwVideoAccel": false,
       "routerInterfaces": null,
-      "services": {
-        "tailnet": "Client",
-        "tailnetController": null
-      },
+      "services": [
+        {
+          "TailnetClient": {}
+        }
+      ],
       "criomeDomainName": "dune.fieldlab.criome",
       "system": "X86_64Linux",
       "maxJobs": 1,

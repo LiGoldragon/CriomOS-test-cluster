@@ -116,7 +116,11 @@
             (inputs.nixpkgs.lib.nixosSystem {
               inherit system;
               specialArgs = {
-                inherit constants inputs;
+                inherit constants;
+                inputs = inputs // {
+                  sops-nix = inputs.criomos.inputs.sops-nix;
+                  secrets.sopsFiles.routerWifiSaePasswords = ./fixtures/secrets/routerWifiSaePasswords;
+                };
                 horizon = fixtureHorizon node;
                 deployment = {
                   includeHome = false;

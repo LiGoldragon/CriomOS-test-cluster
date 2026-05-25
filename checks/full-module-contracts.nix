@@ -19,7 +19,11 @@ let
     (lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit constants horizon inputs;
+        inherit constants horizon;
+        inputs = inputs // {
+          sops-nix = inputs.criomos.inputs.sops-nix;
+          secrets.sopsFiles.routerWifiSaePasswords = ../fixtures/secrets/routerWifiSaePasswords;
+        };
         deployment = {
           includeHome = false;
         };

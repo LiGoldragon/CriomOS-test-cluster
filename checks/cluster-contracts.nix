@@ -33,6 +33,9 @@ let
     in
     horizon
     // {
+      cluster = horizon.cluster // {
+        tailnetBaseDomain = lib.replaceStrings [ from ] [ to ] horizon.cluster.tailnetBaseDomain;
+      };
       node = rewriteNode horizon.node;
       exNodes = lib.mapAttrs (_: rewriteNode) horizon.exNodes;
     };
@@ -42,9 +45,14 @@ let
     (lib.nixosSystem {
       inherit system;
       specialArgs = {
-        inherit constants horizon inputs;
+        inherit constants horizon;
+        inputs = inputs // {
+          sops-nix = inputs.criomos.inputs.sops-nix;
+          secrets.sopsFiles.routerWifiSaePasswords = ../fixtures/secrets/routerWifiSaePasswords;
+        };
       };
       modules = modules ++ [
+        inputs.criomos.inputs.sops-nix.nixosModules.sops
         { system.stateVersion = "26.05"; }
       ];
     }).config;
@@ -54,6 +62,8 @@ let
   atlas = readHorizon "atlas";
   beacon = readHorizon "beacon";
   cedar = readHorizon "cedar";
+  serviceNames = services: map (service: builtins.head (builtins.attrNames service)) services;
+  hasService = service: services: builtins.elem service (serviceNames services);
 
   atlasNetwork = configurationFor atlas [
     (criomosModule "network/default.nix")
@@ -86,9 +96,9 @@ pkgs.runCommand "cluster-contracts" { } ''
 
   test ${lib.escapeShellArg atlas.node.name} = atlas
   test ${lib.escapeShellArg atlas.cluster.name} = fieldlab
-  test ${lib.escapeShellArg atlas.node.services.tailnet} = Client
-  test ${lib.escapeShellArg atlas.node.services.tailnetController} = Server
-  test ${lib.escapeShellArg cedar.node.services.tailnet} = Client
+  test ${lib.escapeShellArg (bool (hasService "TailnetClient" atlas.node.services))} = true
+  test ${lib.escapeShellArg (bool (hasService "TailnetController" atlas.node.services))} = true
+  test ${lib.escapeShellArg (bool (hasService "TailnetClient" cedar.node.services))} = true
   test ${lib.escapeShellArg (bool cedar.node.hasWifiCertPubKey)} = true
 
   test ${lib.escapeShellArg (bool atlasNetwork.services.headscale.enable)} = true
