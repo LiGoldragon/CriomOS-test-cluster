@@ -11,11 +11,11 @@
     ]
   },
   "node": {
-    "name": "beacon",
-    "species": "MediaBroadcast",
+    "name": "mercury",
+    "species": "TestVm",
     "size": {
       "min": true,
-      "medium": true,
+      "medium": false,
       "large": false,
       "max": false
     },
@@ -26,20 +26,20 @@
       "max": true
     },
     "machine": {
-      "species": "Metal",
+      "species": "Pod",
       "arch": "X86_64",
-      "cores": 6,
-      "model": "fixture-builder",
+      "cores": 4,
+      "model": null,
       "motherBoard": null,
-      "superNode": null,
-      "superUser": null,
+      "superNode": "atlas",
+      "superUser": "aria",
       "chipGen": null,
-      "ramGb": 32,
-      "diskGb": null,
-      "location": null
+      "ramGb": 8,
+      "diskGb": 40,
+      "location": "home-lab"
     },
     "linkLocalIps": [],
-    "nodeIp": "10.77.0.2/24",
+    "nodeIp": "10.77.0.7/24",
     "wireguardPubKey": null,
     "nordvpn": false,
     "wifiCert": false,
@@ -49,24 +49,19 @@
     "services": [
       {
         "TailnetClient": {}
-      },
-      {
-        "NixBuilder": {
-          "maximumJobs": 4
-        }
       }
     ],
-    "criomeDomainName": "beacon.fieldlab.criome",
+    "criomeDomainName": "mercury.fieldlab.criome",
     "system": "X86_64Linux",
-    "maxJobs": 4,
-    "buildCores": 4,
-    "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
-    "nixPubKey": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-    "yggPubKey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "yggAddress": "200:db8:1::2",
-    "yggSubnet": "300:db8:1:1::",
+    "maxJobs": 1,
+    "buildCores": 1,
+    "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
+    "nixPubKey": "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+    "yggPubKey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "yggAddress": "200:db8:1::7",
+    "yggSubnet": "300:db8:1:6::",
     "isFullyTrusted": true,
-    "isRemoteNixBuilder": true,
+    "isRemoteNixBuilder": false,
     "isDispatcher": true,
     "isNixCache": false,
     "isLargeEdge": false,
@@ -84,8 +79,8 @@
     "handleLidSwitch": "suspend",
     "handleLidSwitchExternalPower": "lock",
     "handleLidSwitchDocked": "ignore",
-    "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
-    "nixPubKeyLine": "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
+    "nixPubKeyLine": "mercury.fieldlab.criome:EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
     "nixCacheDomain": null,
     "nixUrl": null,
     "behavesAs": {
@@ -94,11 +89,11 @@
       "edge": false,
       "nextGen": false,
       "lowPower": false,
-      "bareMetal": true,
-      "virtualMachine": false,
+      "bareMetal": false,
+      "virtualMachine": true,
       "iso": false,
       "largeAi": false,
-      "testVm": false
+      "testVm": true
     },
     "typeIs": {
       "center": false,
@@ -107,17 +102,17 @@
       "hybrid": false,
       "largeAi": false,
       "largeAiRouter": false,
-      "mediaBroadcast": true,
+      "mediaBroadcast": false,
       "router": false,
       "routerTesting": false,
-      "testVm": false
+      "testVm": true
     },
     "io": {
       "keyboard": "Qwerty",
       "bootloader": "Uefi",
       "disks": {
         "/": {
-          "device": "/dev/disk/by-label/FIELDLAB_BEACON",
+          "device": "/dev/vda",
           "fsType": "Ext4",
           "options": []
         }
@@ -149,6 +144,20 @@
         "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000"
       },
       {
+        "hostName": "beacon.fieldlab.criome",
+        "sshUser": "nix-ssh",
+        "sshKey": "/etc/ssh/ssh_host_ed25519_key",
+        "supportedFeatures": [
+          "big-parallel",
+          "kvm"
+        ],
+        "system": "X86_64Linux",
+        "systems": [],
+        "maxJobs": 4,
+        "publicHostKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+        "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000"
+      },
+      {
         "hostName": "cedar.fieldlab.criome",
         "sshUser": "nix-ssh",
         "sshKey": "/etc/ssh/ssh_host_ed25519_key",
@@ -165,14 +174,14 @@
     ],
     "exNodesSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
     ],
     "dispatchersSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
     ],
     "adminSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
@@ -294,6 +303,109 @@
         "largeAi": false,
         "largeAiRouter": true,
         "mediaBroadcast": false,
+        "router": false,
+        "routerTesting": false,
+        "testVm": false
+      }
+    },
+    "beacon": {
+      "name": "beacon",
+      "species": "MediaBroadcast",
+      "size": {
+        "min": true,
+        "medium": true,
+        "large": false,
+        "max": false
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Metal",
+        "arch": "X86_64",
+        "cores": 6,
+        "model": "fixture-builder",
+        "motherBoard": null,
+        "superNode": null,
+        "superUser": null,
+        "chipGen": null,
+        "ramGb": 32,
+        "diskGb": null,
+        "location": null
+      },
+      "linkLocalIps": [],
+      "nodeIp": "10.77.0.2/24",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": null,
+      "services": [
+        {
+          "TailnetClient": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 4
+          }
+        }
+      ],
+      "criomeDomainName": "beacon.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 4,
+      "buildCores": 4,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "nixPubKey": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "yggPubKey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "yggAddress": "200:db8:1::2",
+      "yggSubnet": "300:db8:1:1::",
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": true,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": true,
+      "hasYggPubKey": true,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": true,
+      "hasVideoOutput": false,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "lock",
+      "handleLidSwitchDocked": "ignore",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "nixPubKeyLine": "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
+        "center": false,
+        "router": false,
+        "edge": false,
+        "nextGen": false,
+        "lowPower": false,
+        "bareMetal": true,
+        "virtualMachine": false,
+        "iso": false,
+        "largeAi": false,
+        "testVm": false
+      },
+      "typeIs": {
+        "center": false,
+        "edge": false,
+        "edgeTesting": false,
+        "hybrid": false,
+        "largeAi": false,
+        "largeAiRouter": false,
+        "mediaBroadcast": true,
         "router": false,
         "routerTesting": false,
         "testVm": false
@@ -499,104 +611,6 @@
         "routerTesting": false,
         "testVm": false
       }
-    },
-    "mercury": {
-      "name": "mercury",
-      "species": "TestVm",
-      "size": {
-        "min": true,
-        "medium": false,
-        "large": false,
-        "max": false
-      },
-      "trust": {
-        "min": true,
-        "medium": true,
-        "large": true,
-        "max": true
-      },
-      "machine": {
-        "species": "Pod",
-        "arch": "X86_64",
-        "cores": 4,
-        "model": null,
-        "motherBoard": null,
-        "superNode": "atlas",
-        "superUser": "aria",
-        "chipGen": null,
-        "ramGb": 8,
-        "diskGb": 40,
-        "location": "home-lab"
-      },
-      "linkLocalIps": [],
-      "nodeIp": "10.77.0.7/24",
-      "wireguardPubKey": null,
-      "nordvpn": false,
-      "wifiCert": false,
-      "wantsPrinting": false,
-      "wantsHwVideoAccel": false,
-      "routerInterfaces": null,
-      "services": [
-        {
-          "TailnetClient": {}
-        }
-      ],
-      "criomeDomainName": "mercury.fieldlab.criome",
-      "system": "X86_64Linux",
-      "maxJobs": 1,
-      "buildCores": 1,
-      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
-      "nixPubKey": "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
-      "yggPubKey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-      "yggAddress": "200:db8:1::7",
-      "yggSubnet": "300:db8:1:6::",
-      "isFullyTrusted": true,
-      "isRemoteNixBuilder": false,
-      "isDispatcher": true,
-      "isNixCache": false,
-      "isLargeEdge": false,
-      "enableNetworkManager": true,
-      "hasNixPubKey": true,
-      "hasYggPubKey": true,
-      "hasSshPubKey": true,
-      "hasWireguardPubKey": false,
-      "hasNordvpnPubKey": false,
-      "hasWifiCertPubKey": false,
-      "hasBasePubKeys": true,
-      "hasVideoOutput": false,
-      "chipIsIntel": true,
-      "modelIsThinkpad": false,
-      "handleLidSwitch": "suspend",
-      "handleLidSwitchExternalPower": "lock",
-      "handleLidSwitchDocked": "ignore",
-      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
-      "nixPubKeyLine": "mercury.fieldlab.criome:EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
-      "nixCacheDomain": null,
-      "nixUrl": null,
-      "behavesAs": {
-        "center": false,
-        "router": false,
-        "edge": false,
-        "nextGen": false,
-        "lowPower": false,
-        "bareMetal": false,
-        "virtualMachine": true,
-        "iso": false,
-        "largeAi": false,
-        "testVm": true
-      },
-      "typeIs": {
-        "center": false,
-        "edge": false,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": true
-      }
     }
   },
   "users": {
@@ -605,7 +619,7 @@
       "species": "Code",
       "size": {
         "min": true,
-        "medium": true,
+        "medium": false,
         "large": false,
         "max": false
       },

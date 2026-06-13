@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:LiGoldragon/nixpkgs?ref=main";
 
-    criomos.url = "github:LiGoldragon/CriomOS";
+    criomos.url = "github:LiGoldragon/CriomOS/horizon-test-vm";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
 
@@ -15,7 +15,7 @@
     criomos-home.follows = "criomos/criomos-home";
     home-manager.follows = "criomos/home-manager";
 
-    horizon.url = "github:LiGoldragon/horizon-rs";
+    horizon.url = "github:LiGoldragon/horizon-rs/horizon-test-vm";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
@@ -43,7 +43,7 @@
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
             set -eu
-            for node in atlas beacon cedar dune; do
+            for node in atlas beacon cedar dune mercury; do
               ${horizonCli}/bin/horizon-cli \
                 --cluster fieldlab \
                 --node "$node" \
@@ -119,6 +119,12 @@
                 inherit constants;
                 inputs = inputs // {
                   sops-nix = inputs.criomos.inputs.sops-nix;
+                  # Thread CriomOS's own microvm.nix input through so the
+                  # microvm host module is imported and the TestVm host
+                  # emission (test-vm-host.nix) can declare its KVM guest.
+                  # The test cluster does not pin microvm itself; it reuses
+                  # CriomOS's locked revision.
+                  microvm = inputs.criomos.inputs.microvm;
                   secrets.sopsFiles.routerWifiSaePasswords = ./fixtures/secrets/routerWifiSaePasswords;
                 };
                 horizon = fixtureHorizon node;
@@ -199,6 +205,19 @@
         in
         {
           dune-toplevel = fixtureSystem "dune" [ ];
+
+          # The TestVm guest (mercury) — its own lean, deployable CriomOS
+          # toplevel. behavesAs.testVm suppresses the home/doc weight; sshd +
+          # operator key + a real /dev/vda Ext4 root remain (it is a real
+          # node). Design report 47, surface 4.
+          mercury-toplevel = fixtureSystem "mercury" [ ];
+
+          # The host (atlas) that hosts mercury — its toplevel now carries the
+          # mercury KVM microVM guest + the additive tap + the guest-IP
+          # networking.hosts entry + the non-autostart unit. Design report 47,
+          # surface 5.
+          atlas-toplevel = fixtureSystem "atlas" [ ];
+
           dune-nspawn-toplevel = fixtureSystem "dune" [
             (
               { lib, ... }:

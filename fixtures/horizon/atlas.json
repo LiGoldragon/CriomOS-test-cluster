@@ -6,7 +6,8 @@
       "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
       "beacon.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
       "cedar.fieldlab.criome:CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
-      "dune.fieldlab.criome:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+      "dune.fieldlab.criome:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "mercury.fieldlab.criome:EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
     ]
   },
   "node": {
@@ -33,7 +34,9 @@
       "superNode": null,
       "superUser": null,
       "chipGen": null,
-      "ramGb": 64
+      "ramGb": 64,
+      "diskGb": null,
+      "location": null
     },
     "linkLocalIps": [],
     "nodeIp": "10.77.0.1/24",
@@ -50,7 +53,8 @@
       "wlanStandard": "wifi6",
       "wpa3SaePassword": {
         "name": "routerWifiSaePasswords"
-      }
+      },
+      "backupWireless": null
     },
     "services": [
       {
@@ -109,7 +113,8 @@
       "bareMetal": true,
       "virtualMachine": false,
       "iso": false,
-      "largeAi": true
+      "largeAi": true,
+      "testVm": false
     },
     "typeIs": {
       "center": false,
@@ -120,7 +125,8 @@
       "largeAiRouter": true,
       "mediaBroadcast": false,
       "router": false,
-      "routerTesting": false
+      "routerTesting": false,
+      "testVm": false
     },
     "io": {
       "keyboard": "Qwerty",
@@ -132,7 +138,8 @@
           "options": []
         }
       },
-      "swapDevices": []
+      "swapDevices": [],
+      "compressedSwap": null
     },
     "useColemak": false,
     "computerIs": {
@@ -173,12 +180,14 @@
     "exNodesSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000"
     ],
     "dispatchersSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000"
     ],
     "adminSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
@@ -210,7 +219,9 @@
         "superNode": null,
         "superUser": null,
         "chipGen": null,
-        "ramGb": 32
+        "ramGb": 32,
+        "diskGb": null,
+        "location": null
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.2/24",
@@ -271,7 +282,8 @@
         "bareMetal": true,
         "virtualMachine": false,
         "iso": false,
-        "largeAi": false
+        "largeAi": false,
+        "testVm": false
       },
       "typeIs": {
         "center": false,
@@ -282,7 +294,8 @@
         "largeAiRouter": false,
         "mediaBroadcast": true,
         "router": false,
-        "routerTesting": false
+        "routerTesting": false,
+        "testVm": false
       }
     },
     "cedar": {
@@ -309,7 +322,9 @@
         "superNode": null,
         "superUser": null,
         "chipGen": 12,
-        "ramGb": 16
+        "ramGb": 16,
+        "diskGb": null,
+        "location": null
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.3/24",
@@ -370,7 +385,8 @@
         "bareMetal": true,
         "virtualMachine": false,
         "iso": false,
-        "largeAi": false
+        "largeAi": false,
+        "testVm": false
       },
       "typeIs": {
         "center": false,
@@ -381,7 +397,8 @@
         "largeAiRouter": false,
         "mediaBroadcast": false,
         "router": false,
-        "routerTesting": false
+        "routerTesting": false,
+        "testVm": false
       }
     },
     "dune": {
@@ -408,7 +425,9 @@
         "superNode": "atlas",
         "superUser": "aria",
         "chipGen": null,
-        "ramGb": 4
+        "ramGb": 4,
+        "diskGb": null,
+        "location": null
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.4/24",
@@ -464,7 +483,8 @@
         "bareMetal": false,
         "virtualMachine": true,
         "iso": false,
-        "largeAi": false
+        "largeAi": false,
+        "testVm": false
       },
       "typeIs": {
         "center": false,
@@ -475,7 +495,106 @@
         "largeAiRouter": false,
         "mediaBroadcast": false,
         "router": false,
-        "routerTesting": false
+        "routerTesting": false,
+        "testVm": false
+      }
+    },
+    "mercury": {
+      "name": "mercury",
+      "species": "TestVm",
+      "size": {
+        "min": true,
+        "medium": false,
+        "large": false,
+        "max": false
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Pod",
+        "arch": "X86_64",
+        "cores": 4,
+        "model": null,
+        "motherBoard": null,
+        "superNode": "atlas",
+        "superUser": "aria",
+        "chipGen": null,
+        "ramGb": 8,
+        "diskGb": 40,
+        "location": "home-lab"
+      },
+      "linkLocalIps": [],
+      "nodeIp": "10.77.0.7/24",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": null,
+      "services": [
+        {
+          "TailnetClient": {}
+        }
+      ],
+      "criomeDomainName": "mercury.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 1,
+      "buildCores": 1,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
+      "nixPubKey": "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+      "yggPubKey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "yggAddress": "200:db8:1::7",
+      "yggSubnet": "300:db8:1:6::",
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": false,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": true,
+      "hasYggPubKey": true,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": true,
+      "hasVideoOutput": false,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "lock",
+      "handleLidSwitchDocked": "ignore",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000",
+      "nixPubKeyLine": "mercury.fieldlab.criome:EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
+        "center": false,
+        "router": false,
+        "edge": false,
+        "nextGen": false,
+        "lowPower": false,
+        "bareMetal": false,
+        "virtualMachine": true,
+        "iso": false,
+        "largeAi": false,
+        "testVm": true
+      },
+      "typeIs": {
+        "center": false,
+        "edge": false,
+        "edgeTesting": false,
+        "hybrid": false,
+        "largeAi": false,
+        "largeAiRouter": false,
+        "mediaBroadcast": false,
+        "router": false,
+        "routerTesting": false,
+        "testVm": true
       }
     }
   },

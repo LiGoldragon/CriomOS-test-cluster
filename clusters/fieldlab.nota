@@ -5,7 +5,7 @@
     atlas (LargeAiRouter
       Max
       Max
-      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64))
+      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None)
       (Qwerty
         Uefi
         {
@@ -24,13 +24,13 @@
       []
       False
       False
-      (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords))))
+      (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords)) None))
       (Some True)
       [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache)])
     beacon (MediaBroadcast
       Medium
       Max
-      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32))
+      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None)
       (Qwerty
         Uefi
         {
@@ -55,7 +55,7 @@
     cedar (Edge
       Medium
       Max
-      (Metal (Some X86_64) 4 (Some [ThinkPadT14Gen2Intel]) None None None (Some 12) (Some 16))
+      (Metal (Some X86_64) 4 (Some [ThinkPadT14Gen2Intel]) None None None (Some 12) (Some 16) None None)
       (Colemak
         Uefi
         {
@@ -80,7 +80,7 @@
     dune (Edge
       Min
       Max
-      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4))
+      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) None None)
       (Qwerty
         Uefi
         {
@@ -93,6 +93,31 @@
           ([dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd] [200:db8:1::4] [300:db8:1:3::])))
       []
       (Some [10.77.0.4/24])
+      None
+      False
+      False
+      []
+      False
+      False
+      None
+      (Some True)
+      [(TailnetClient)])
+    mercury (TestVm
+      Min
+      Max
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Qwerty
+        Uefi
+        {
+          [/] ([/dev/vda] Ext4 [])
+        }
+        [])
+      ([AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000]
+        (Some [EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE])
+        (Some
+          ([eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee] [200:db8:1::7] [300:db8:1:6::])))
+      []
+      (Some [10.77.0.7/24])
       None
       False
       False
@@ -125,6 +150,7 @@
       beacon Max
       cedar Max
       dune Max
+      mercury Max
     }
     {
       aria Max
