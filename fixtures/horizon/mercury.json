@@ -249,6 +249,13 @@
         },
         {
           "NixCache": {}
+        },
+        {
+          "VmHost": {
+            "guestSubnet": "169.254.100.0/22",
+            "kvm": "Available",
+            "maximumGuests": 4
+          }
         }
       ],
       "criomeDomainName": "atlas.fieldlab.criome",

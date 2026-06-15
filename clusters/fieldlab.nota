@@ -26,7 +26,7 @@
       False
       (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords)) None))
       (Some True)
-      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache)])
+      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache) (VmHost [169.254.100.0/22] Available (Some 4))])
     beacon (MediaBroadcast
       Medium
       Max
