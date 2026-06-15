@@ -26,13 +26,63 @@ cluster-specific**: it is a function of the cluster model.
 - **Static contract checks** (the bulk, today): build a node config and assert
   static attributes — a service is enabled, a domain resolves, a known-host is
   present. Cheap, eval-only.
-- **Booted VM tests** (`lib/mkVmTest.nix`, the C4 generator): boot the
-  generated guest under `runNixOSTest` and assert BEHAVIOUR (sshd answers, a
-  unit comes up). The author writes ONLY `(cluster, hostNode, vmNode,
-  testScript)`; the guest OS, its size, its address, and every substrate fix
-  flow from the projection plus the named `test-substrate` profile in CriomOS.
-  The guest is a real CriomOS node built from its projection — never a
-  hand-stub (Spirit [dqg3]/[aipc]).
+- **Booted VM tests** (`lib/mkVmTest.nix`, the generator): boot the generated
+  guest under `runNixOSTest` and assert BEHAVIOUR (sshd answers, a desktop
+  service comes up, a home generation activates). The author writes ONLY
+  `(cluster, hostNode, vmNode, testScript)`; the guest OS, its size, its
+  address, its accel, and every substrate fix flow from the projection plus the
+  named `test-substrate` profile in CriomOS. The guest is a real CriomOS node
+  built from its projection — never a hand-stub (Spirit [dqg3]/[aipc]).
+
+## Complex-OS + home-profile suite (the headline)
+
+A test boots ANY Pod-substrate node hosted on a `VmHost` host (relaxed from "a
+lean TestVm"): the PROFILE under test is whatever the node's projection derives.
+A node's species → `behavesAs.*` facets → which CriomOS module trees light up:
+
+- an **Edge** Pod lights the desktop tree (greetd/regreet, polkit, dbus,
+  gnome-keyring, niri session) — a **complex OS** profile. `edge-desktop` in
+  `fieldlab.nota`; the `edge-desktop-boots-greeter` check boots it and asserts
+  the display-manager + desktop-support services.
+- a lean **TestVm** Pod with `includeHome = true` keeps the home-manager base
+  profile on an otherwise-minimal system — a **home profile**. `base-home`; the
+  `base-home-activates` check asserts the per-user activation generation runs
+  and a home program (`programs.git` → `~/.config/git/config`) lands.
+
+The generator reads the host's `VmHost` capability fully: `kvm` (Available →
+KVM, Absent → a TCG software substrate) and `maximum_guests` (asserted against
+the host's hosted Pod-substrate set; over-subscription fails at eval). The home
+toggle is the one cluster-decided flag (proposal decision 4 — `includeHome`),
+derived from role by default and set explicitly only for the home-isolation
+case.
+
+## The production-deploy smoke (the deploy MACHINERY, exactly once)
+
+`lib/mkDeployTest.nix` keeps the REAL lojix production deploy path under a
+hermetic, repeatable 2-node `runNixOSTest` — proving the *machinery*, not the
+*content* of any role (that is the mkVmTest suite's job). A **deployer** node
+runs the FIXED lojix daemon (lojix main, the `<drv>^*` output-selector fix that
+the live e2e caught) configured the real way (`lojix-write-configuration` →
+rkyv → `lojix-daemon`, both sockets at production modes); a **target** node is
+the projected guest (mercury). The deployer submits a `FullOs` `Boot` Deploy of
+the target's OWN projected config — `build_attribute` = the deploy flake's
+`systemToplevel`, cluster-data-generated, never hand-written — and the test
+asserts the target's `/nix/var/nix/profiles/system` becomes the lojix-deployed
+closure (a real `nixos-system-<node>`, the `<drv>^*` fix held, never the bare
+`.drv`), corroborated by the daemon's durable terminal deploy-job record read
+via the ordinary CLI. Psyche-scoped to GENERATION-ACTIVATION, not the full
+BootOnce reboot (the deferred q35 part).
+
+The integration walls are unblocked IN the test (Spirit [dqg3]), never papered
+over: the daemon's `nix eval`/`nix build` run fully OFFLINE (the deploy flake
+re-derives the target's system with a clavifaber stub so eval never fetches
+`nota-derive`; the whole eval+build closure is pinned into the deployer store;
+`tarball-ttl` + `use-registries=false` make `nix eval --refresh` re-use the
+store-resident inputs by narHash); `<node>.<cluster>.criome` resolves via
+`networking.hosts`; the deploy key + accept-new host-key trust unblock ssh-ng
+copy AND the activation ssh; and the silent daemon is observed by polling the
+target's own profile link plus the durable Query state. This is the one place
+the production path that caught the `.drv` bug runs under repeatable test.
 
 ## Non-negotiables
 

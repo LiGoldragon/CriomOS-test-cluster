@@ -18,6 +18,15 @@
     horizon.url = "github:LiGoldragon/horizon-rs/horizon-test-vm";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
+    # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*
+    # output-selector fix, commit efbc5ea, that the live e2e caught: build
+    # must realise the system, never copy/activate the bare .drv). The C6
+    # smoke test builds the FIXED daemon + the meta-lojix / lojix / write-
+    # configuration CLIs into the deployer node from this input. lojix pins
+    # its own nixpkgs (its crane/fenix toolchain); we do NOT follow ours onto
+    # it — the daemon is a self-contained release artifact.
+    lojix.url = "github:LiGoldragon/lojix/main";
+
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
 
@@ -44,7 +53,7 @@
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
             set -eu
-            for node in atlas beacon cedar dune mercury; do
+            for node in atlas beacon cedar dune mercury edge-desktop base-home; do
               ${horizonCli}/bin/horizon-cli \
                 --cluster fieldlab \
                 --node "$node" \
@@ -124,6 +133,102 @@
             testScript = ''
               mercury.wait_for_unit("sshd.service")
               mercury.succeed("systemctl is-active sshd.service")
+            '';
+          };
+
+          # ====================================================================
+          # The readable COMPLEX-OS + HOME-PROFILE suite (C5). Each check is a
+          # mkVmTest spec for which the author writes ONLY the declarative tuple
+          # (cluster, hostNode, vmNode, testScript) — the heavy role PROFILE
+          # under test comes entirely from the node's PROJECTION (its species ->
+          # behavesAs facets -> which CriomOS module trees light up), never a
+          # hand-stub (Spirit [aipc]). The two anchors below prove the suite
+          # delivers genuine "complex os and home-profile testing".
+          # ====================================================================
+
+          # PATTERN: a COMPLEX-OS profile boots its desktop stack. ONE concept —
+          # "an Edge node's projection lights the display-manager + desktop
+          # support services, and they come up in a real boot" (Spirit [xxgp]).
+          # edge-desktop is an Edge Pod in fieldlab.nota; its projection derives
+          # behavesAs.edge = true, so edge/default.nix emits greetd (regreet),
+          # polkit, dbus, gnome-keyring — the complex desktop OS. The author
+          # never names any of that; it flows from the role. This is the headline
+          # "complex OS" anchor.
+          edge-desktop-boots-greeter = (import ./lib/mkVmTest.nix {
+            inherit inputs pkgs self system;
+          }) {
+            cluster = "fieldlab";
+            hostNode = "atlas";
+            vmNode = "edge-desktop";
+            testScript = ''
+              # the desktop support bus comes up
+              edge_desktop.wait_for_unit("dbus.service")
+              # the display manager is greetd (regreet greeter) — the KEY design
+              # point of an Edge profile: a node you log into graphically. greetd
+              # reaches its active greeter at boot, and its PAM starts the keyring
+              # ("gkr-pam: gnome-keyring-daemon started properly" in the boot log).
+              edge_desktop.wait_for_unit("greetd.service")
+              # the desktop keyring + the niri graphical session are installed —
+              # the Secret portal binds gnome-keyring, the display manager runs
+              # niri. Both daemons on PATH prove the desktop stack is composed.
+              edge_desktop.succeed("test -x /run/current-system/sw/bin/gnome-keyring-daemon")
+              edge_desktop.succeed("test -x /run/current-system/sw/bin/niri")
+              # polkit is dbus/socket-activated (not active until first call), so
+              # assert it is the system's installed authorization daemon.
+              edge_desktop.succeed("systemctl cat polkit.service | grep -q polkitd")
+            '';
+          };
+
+          # PATTERN: a HOME-PROFILE activates on a lean node. ONE concept —
+          # "deployment.includeHome on an otherwise-minimal node activates the
+          # home-manager base generation, and a home program lands in the user's
+          # config" (Spirit [xxgp]). base-home is a lean TestVm Pod; the spec
+          # sets includeHome = true (proposal decision 4 — the one cluster-decided
+          # home flag) to ISOLATE the home profile on a minimal system, so the
+          # test proves the home-manager activation in isolation, not entangled
+          # with a desktop. This is the headline "home-profile" anchor.
+          # ====================================================================
+          # C6 — the lojix-deploy SMOKE TEST. The REAL production deploy path
+          # (the FIXED lojix daemon, <drv>^* fix) under a HERMETIC, REPEATABLE
+          # 2-node runNixOSTest: a deployer node runs the daemon and deploys the
+          # TARGET's projected config into the target node; the target's system
+          # profile generation becomes the lojix-deployed closure (a real
+          # nixos-system, never the bare .drv). Psyche-scoped to
+          # generation-activation (NOT the full BootOnce reboot). See
+          # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,
+          # PATTERN comment there (Spirit [xxgp]); the integration risks
+          # (offline eval+build, address resolution, ssh-ng/store-copy, silent
+          # daemon) are unblocked IN the test (Spirit [dqg3]).
+          # ====================================================================
+          lojix-deploy-smoke = (import ./lib/mkDeployTest.nix {
+            inherit inputs pkgs self system;
+          }) {
+            cluster = "fieldlab";
+            hostNode = "atlas";
+            vmNode = "mercury";
+          };
+
+          base-home-activates = (import ./lib/mkVmTest.nix {
+            inherit inputs pkgs self system;
+          }) {
+            cluster = "fieldlab";
+            hostNode = "atlas";
+            vmNode = "base-home";
+            includeHome = true;
+            testScript = ''
+              # the per-user home-manager activation generation runs at boot
+              base_home.wait_for_unit("home-manager-aria.service")
+              base_home.succeed("systemctl is-active home-manager-aria.service")
+              # a home PROGRAM landed in the user's config — programs.git from the
+              # base (min) home profile writes ~/.config/git/config with the
+              # project's pull.rebase + beads.role + the projected user email.
+              # Asserting the generated file proves the home profile applied, not
+              # just that the activation unit ran. (String values render quoted;
+              # booleans bare — git's own ini format.)
+              base_home.succeed("test -e /home/aria/.config/git/config")
+              base_home.succeed("grep -q 'rebase = true' /home/aria/.config/git/config")
+              base_home.succeed("grep -q 'role = \"maintainer\"' /home/aria/.config/git/config")
+              base_home.succeed("grep -q 'email = \"aria@fieldlab.criome.net\"' /home/aria/.config/git/config")
             '';
           };
         }

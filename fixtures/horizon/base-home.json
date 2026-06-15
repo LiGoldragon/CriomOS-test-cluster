@@ -13,13 +13,13 @@
     ]
   },
   "node": {
-    "name": "atlas",
-    "species": "LargeAiRouter",
+    "name": "base-home",
+    "species": "TestVm",
     "size": {
       "min": true,
-      "medium": true,
-      "large": true,
-      "max": true
+      "medium": false,
+      "large": false,
+      "max": false
     },
     "trust": {
       "min": true,
@@ -28,74 +28,46 @@
       "max": true
     },
     "machine": {
-      "species": "Metal",
+      "species": "Pod",
       "arch": "X86_64",
-      "cores": 8,
-      "model": "fixture-router",
+      "cores": 4,
+      "model": null,
       "motherBoard": null,
-      "superNode": null,
-      "superUser": null,
+      "superNode": "atlas",
+      "superUser": "aria",
       "chipGen": null,
-      "ramGb": 64,
-      "diskGb": null,
-      "location": null
+      "ramGb": 8,
+      "diskGb": 40,
+      "location": "home-lab"
     },
     "linkLocalIps": [],
-    "nodeIp": "10.77.0.1/24",
+    "nodeIp": "10.77.0.9/24",
     "wireguardPubKey": null,
     "nordvpn": false,
     "wifiCert": false,
     "wantsPrinting": false,
     "wantsHwVideoAccel": false,
-    "routerInterfaces": {
-      "wan": "wan0",
-      "wlan": "wlan0",
-      "wlanBand": "2g",
-      "wlanChannel": 6,
-      "wlanStandard": "wifi6",
-      "wpa3SaePassword": {
-        "name": "routerWifiSaePasswords"
-      },
-      "backupWireless": null
-    },
+    "routerInterfaces": null,
     "services": [
       {
         "TailnetClient": {}
-      },
-      {
-        "TailnetController": {}
-      },
-      {
-        "NixBuilder": {
-          "maximumJobs": 8
-        }
-      },
-      {
-        "NixCache": {}
-      },
-      {
-        "VmHost": {
-          "guestSubnet": "169.254.100.0/22",
-          "kvm": "Available",
-          "maximumGuests": 4
-        }
       }
     ],
-    "criomeDomainName": "atlas.fieldlab.criome",
+    "criomeDomainName": "base-home.fieldlab.criome",
     "system": "X86_64Linux",
-    "maxJobs": 8,
-    "buildCores": 8,
-    "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
-    "nixPubKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-    "yggPubKey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "yggAddress": "200:db8:1::1",
-    "yggSubnet": "300:db8:1::",
+    "maxJobs": 1,
+    "buildCores": 1,
+    "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
+    "nixPubKey": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "yggPubKey": "99999999999999999999999999999999999999999999999999999999999999aa",
+    "yggAddress": "200:db8:1::9",
+    "yggSubnet": "300:db8:1:8::",
     "isFullyTrusted": true,
-    "isRemoteNixBuilder": true,
-    "isDispatcher": false,
-    "isNixCache": true,
+    "isRemoteNixBuilder": false,
+    "isDispatcher": true,
+    "isNixCache": false,
     "isLargeEdge": false,
-    "enableNetworkManager": false,
+    "enableNetworkManager": true,
     "hasNixPubKey": true,
     "hasYggPubKey": true,
     "hasSshPubKey": true,
@@ -106,24 +78,24 @@
     "hasVideoOutput": false,
     "chipIsIntel": true,
     "modelIsThinkpad": false,
-    "handleLidSwitch": "ignore",
-    "handleLidSwitchExternalPower": "ignore",
+    "handleLidSwitch": "suspend",
+    "handleLidSwitchExternalPower": "lock",
     "handleLidSwitchDocked": "ignore",
-    "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
-    "nixPubKeyLine": "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-    "nixCacheDomain": "nix.atlas.fieldlab.criome",
-    "nixUrl": "http://nix.atlas.fieldlab.criome",
+    "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
+    "nixPubKeyLine": "base-home.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "nixCacheDomain": null,
+    "nixUrl": null,
     "behavesAs": {
-      "center": true,
-      "router": true,
+      "center": false,
+      "router": false,
       "edge": false,
       "nextGen": false,
       "lowPower": false,
-      "bareMetal": true,
-      "virtualMachine": false,
+      "bareMetal": false,
+      "virtualMachine": true,
       "iso": false,
-      "largeAi": true,
-      "testVm": false
+      "largeAi": false,
+      "testVm": true
     },
     "typeIs": {
       "center": false,
@@ -131,18 +103,18 @@
       "edgeTesting": false,
       "hybrid": false,
       "largeAi": false,
-      "largeAiRouter": true,
+      "largeAiRouter": false,
       "mediaBroadcast": false,
       "router": false,
       "routerTesting": false,
-      "testVm": false
+      "testVm": true
     },
     "io": {
       "keyboard": "Qwerty",
       "bootloader": "Uefi",
       "disks": {
         "/": {
-          "device": "/dev/disk/by-label/FIELDLAB_ATLAS",
+          "device": "/dev/vda",
           "fsType": "Ext4",
           "options": []
         }
@@ -159,6 +131,20 @@
       "rpi3b": false
     },
     "builderConfigs": [
+      {
+        "hostName": "atlas.fieldlab.criome",
+        "sshUser": "nix-ssh",
+        "sshKey": "/etc/ssh/ssh_host_ed25519_key",
+        "supportedFeatures": [
+          "big-parallel",
+          "kvm"
+        ],
+        "system": "X86_64Linux",
+        "systems": [],
+        "maxJobs": 8,
+        "publicHostKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+        "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000"
+      },
       {
         "hostName": "beacon.fieldlab.criome",
         "sshUser": "nix-ssh",
@@ -185,9 +171,11 @@
         "publicHostKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000"
       }
     ],
-    "cacheUrls": [],
+    "cacheUrls": [
+      "http://nix.atlas.fieldlab.criome"
+    ],
     "exNodesSshPubKeys": [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
@@ -195,7 +183,6 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000"
     ],
     "dispatchersSshPubKeys": [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
@@ -208,14 +195,14 @@
     "wireguardUntrustedProxies": []
   },
   "exNodes": {
-    "base-home": {
-      "name": "base-home",
-      "species": "TestVm",
+    "atlas": {
+      "name": "atlas",
+      "species": "LargeAiRouter",
       "size": {
         "min": true,
-        "medium": false,
-        "large": false,
-        "max": false
+        "medium": true,
+        "large": true,
+        "max": true
       },
       "trust": {
         "min": true,
@@ -224,46 +211,74 @@
         "max": true
       },
       "machine": {
-        "species": "Pod",
+        "species": "Metal",
         "arch": "X86_64",
-        "cores": 4,
-        "model": null,
+        "cores": 8,
+        "model": "fixture-router",
         "motherBoard": null,
-        "superNode": "atlas",
-        "superUser": "aria",
+        "superNode": null,
+        "superUser": null,
         "chipGen": null,
-        "ramGb": 8,
-        "diskGb": 40,
-        "location": "home-lab"
+        "ramGb": 64,
+        "diskGb": null,
+        "location": null
       },
       "linkLocalIps": [],
-      "nodeIp": "10.77.0.9/24",
+      "nodeIp": "10.77.0.1/24",
       "wireguardPubKey": null,
       "nordvpn": false,
       "wifiCert": false,
       "wantsPrinting": false,
       "wantsHwVideoAccel": false,
-      "routerInterfaces": null,
+      "routerInterfaces": {
+        "wan": "wan0",
+        "wlan": "wlan0",
+        "wlanBand": "2g",
+        "wlanChannel": 6,
+        "wlanStandard": "wifi6",
+        "wpa3SaePassword": {
+          "name": "routerWifiSaePasswords"
+        },
+        "backupWireless": null
+      },
       "services": [
         {
           "TailnetClient": {}
+        },
+        {
+          "TailnetController": {}
+        },
+        {
+          "NixBuilder": {
+            "maximumJobs": 8
+          }
+        },
+        {
+          "NixCache": {}
+        },
+        {
+          "VmHost": {
+            "guestSubnet": "169.254.100.0/22",
+            "kvm": "Available",
+            "maximumGuests": 4
+          }
         }
       ],
-      "criomeDomainName": "base-home.fieldlab.criome",
+      "criomeDomainName": "atlas.fieldlab.criome",
       "system": "X86_64Linux",
-      "maxJobs": 1,
-      "buildCores": 1,
-      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
-      "nixPubKey": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-      "yggPubKey": "99999999999999999999999999999999999999999999999999999999999999aa",
-      "yggAddress": "200:db8:1::9",
-      "yggSubnet": "300:db8:1:8::",
+      "maxJobs": 8,
+      "buildCores": 8,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "nixPubKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "yggPubKey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "yggAddress": "200:db8:1::1",
+      "yggSubnet": "300:db8:1::",
       "isFullyTrusted": true,
-      "isRemoteNixBuilder": false,
-      "isDispatcher": true,
-      "isNixCache": false,
+      "isRemoteNixBuilder": true,
+      "isDispatcher": false,
+      "isNixCache": true,
       "isLargeEdge": false,
-      "enableNetworkManager": true,
+      "enableNetworkManager": false,
       "hasNixPubKey": true,
       "hasYggPubKey": true,
       "hasSshPubKey": true,
@@ -274,24 +289,24 @@
       "hasVideoOutput": false,
       "chipIsIntel": true,
       "modelIsThinkpad": false,
-      "handleLidSwitch": "suspend",
-      "handleLidSwitchExternalPower": "lock",
+      "handleLidSwitch": "ignore",
+      "handleLidSwitchExternalPower": "ignore",
       "handleLidSwitchDocked": "ignore",
-      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
-      "nixPubKeyLine": "base-home.fieldlab.criome:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-      "nixCacheDomain": null,
-      "nixUrl": null,
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
+      "nixPubKeyLine": "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "nixCacheDomain": "nix.atlas.fieldlab.criome",
+      "nixUrl": "http://nix.atlas.fieldlab.criome",
       "behavesAs": {
-        "center": false,
-        "router": false,
+        "center": true,
+        "router": true,
         "edge": false,
         "nextGen": false,
         "lowPower": false,
-        "bareMetal": false,
-        "virtualMachine": true,
+        "bareMetal": true,
+        "virtualMachine": false,
         "iso": false,
-        "largeAi": false,
-        "testVm": true
+        "largeAi": true,
+        "testVm": false
       },
       "typeIs": {
         "center": false,
@@ -299,11 +314,11 @@
         "edgeTesting": false,
         "hybrid": false,
         "largeAi": false,
-        "largeAiRouter": false,
+        "largeAiRouter": true,
         "mediaBroadcast": false,
         "router": false,
         "routerTesting": false,
-        "testVm": true
+        "testVm": false
       }
     },
     "beacon": {
@@ -813,9 +828,9 @@
       "species": "Code",
       "size": {
         "min": true,
-        "medium": true,
-        "large": true,
-        "max": true
+        "medium": false,
+        "large": false,
+        "max": false
       },
       "trust": {
         "min": true,
@@ -858,7 +873,7 @@
         "storage",
         "libvirtd"
       ],
-      "enableLinger": true
+      "enableLinger": false
     }
   }
 }

@@ -127,6 +127,56 @@
       None
       (Some True)
       [(TailnetClient)])
+    edge-desktop (Edge
+      Min
+      Max
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Qwerty
+        Uefi
+        {
+          [/] ([/dev/vda] Ext4 [])
+        }
+        [])
+      ([AAAAC3NzaC1lZDI1NTE5AAAAIEdgeDesktopFixtureSshPublicKeyBody00]
+        (Some [FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF])
+        (Some
+          ([ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff] [200:db8:1::8] [300:db8:1:7::])))
+      []
+      (Some [10.77.0.8/24])
+      None
+      False
+      False
+      []
+      False
+      False
+      None
+      (Some True)
+      [(TailnetClient)])
+    base-home (TestVm
+      Min
+      Max
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Qwerty
+        Uefi
+        {
+          [/] ([/dev/vda] Ext4 [])
+        }
+        [])
+      ([AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000]
+        (Some [BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB])
+        (Some
+          ([99999999999999999999999999999999999999999999999999999999999999aa] [200:db8:1::9] [300:db8:1:8::])))
+      []
+      (Some [10.77.0.9/24])
+      None
+      False
+      False
+      []
+      False
+      False
+      None
+      (Some True)
+      [(TailnetClient)])
   }
   {
     aria (Code
@@ -151,6 +201,8 @@
       cedar Max
       dune Max
       mercury Max
+      edge-desktop Max
+      base-home Max
     }
     {
       aria Max

@@ -1,5 +1,6 @@
-# mkVmTest — the cluster-data-generated VM-test generator (C4; design reports
-# 50/4-design-proposal §2, 50/1-psyche-decisions).
+# mkVmTest — the cluster-data-generated VM-test generator (C4; refined for the
+# complex-OS + home-profile suite, C5; design reports 50/4-design-proposal §2+§4,
+# 50/1-psyche-decisions).
 #
 # A test is a function of the CLUSTER MODEL, never cluster-specific: the author
 # writes ONLY (cluster, hostNode, vmNode, testScript). Everything the guest is —
@@ -13,17 +14,44 @@
 #   mkVmTest {
 #     cluster    = "fieldlab";       # the cluster these nodes belong to
 #     hostNode   = "atlas";          # the physical VM host — carries VmHost data
-#     vmNode     = "mercury";        # the TestVm guest to boot
+#     vmNode     = "edge-desktop";   # ANY Pod node hosted on the VmHost host
 #     testScript = ''<runNixOSTest python, reads like prose>'';
 #     substrate  = "microvm";        # baked constraint set (default), NOT authored
 #   } -> a runnable flake check (a runNixOSTest derivation)
 #
+# THE C5 MODEL REFINEMENT (the crux for testing COMPLEX profiles):
+#   C4 required vmNode to be a LEAN TestVm (behavesAs.testVm). That is too narrow
+#   for "complex OS testing", which means booting HEAVY role profiles — a desktop
+#   (Edge), a router. So the model invariant is RELAXED from
+#       "vmNode is behavesAs.testVm"
+#   to
+#       "vmNode is a Pod-substrate node hosted on a VmHost host" (ANY role).
+#   The lean TestVm is now just the deploy-target SPECIAL CASE; an Edge Pod is a
+#   complex-OS case, a TestVm Pod with home kept is a home-profile case. The
+#   profile under test comes ENTIRELY from the node's PROJECTION (its species ->
+#   behavesAs facets -> which CriomOS module trees light up) — never hand-stubbed
+#   (Spirit [aipc]). 100% cluster-data-generation is preserved.
+#
 # WHAT FLOWS FROM CLUSTER DATA (never authored per-test):
 #   - the guest OS:     a real CriomOS nixosSystem with specialArgs.horizon =
-#                       <vmNode projection>; the role (TestVm -> behavesAs.testVm)
-#                       and every module gate come from that projection;
+#                       <vmNode projection>; the role (species -> behavesAs.*)
+#                       and every module gate come from that projection — an Edge
+#                       node lights the desktop tree, a Router node the router
+#                       tree, a lean TestVm neither;
+#   - the home profile: includeHome is DERIVED from the role — a lean TestVm
+#                       suppresses home (its whole point), every other role keeps
+#                       the production home profile. A base-home test is a node
+#                       that keeps home; the toggle is cluster-decided, not
+#                       hand-set (proposal decision 4 — reuse includeHome);
 #   - the VM size:      virtualisation.{cores,memorySize,diskSize} read from the
 #                       guest's projected machine.{cores,ramGb,diskGb};
+#   - the accel:        the host's VmHost.kvm decides the QEMU substrate — kvm
+#                       Available -> KVM acceleration, kvm Absent -> a TCG
+#                       (software) substrate (read off cluster data, not the
+#                       builder's luck);
+#   - the capacity:     the host's VmHost.maximum_guests is asserted not exceeded
+#                       by its hosted Pod-substrate guest set (over-subscription
+#                       is a cluster-authoring error, surfaced at eval);
 #   - the network:      the guest's host-side endpoint is sliced from the host's
 #                       VmHost.guest_subnet (the same CIDR test-vm-host.nix slices
 #                       on the real host) — never the 169.254.100+i.1 invented in
@@ -96,6 +124,23 @@ let
     in
     if entry == null then null else entry.VmHost;
 
+  # The host's Pod-substrate guests — every exNode whose machine.superNode names
+  # this host AND whose substrate is Pod (a VM the host runs), by sorted name.
+  # This is the C5-relaxed hosted set: the C4 model filtered on behavesAs.testVm
+  # (lean guests only); the host runs ANY Pod-on-it node regardless of its role,
+  # so capacity and the per-guest index span all of them.
+  hostedPodNamesOf =
+    hostNodeName: hostHorizon:
+    lib.sort lib.lessThan (
+      lib.attrNames (
+        lib.filterAttrs (
+          _: exNode:
+          (exNode.machine.superNode or null) == hostNodeName
+          && (exNode.machine.species or null) == "Pod"
+        ) (hostHorizon.exNodes or { })
+      )
+    );
+
   # Strip the prefix length from a CIDR / address, leaving the dotted-decimal.
   bareAddress = value: if value == null then null else builtins.head (lib.splitString "/" value);
 
@@ -131,6 +176,13 @@ in
   # Extra modules the author may compose onto the guest (rare — the point is to
   # need none). Substrate constraints never live here; they live in C3.
   extraGuestModules ? [ ],
+  # The home profile toggle (proposal decision 4 — reuse deployment.includeHome).
+  # `null` (default) DERIVES it from the role: a lean TestVm drops home, every
+  # other role keeps it — so an Edge node author writes nothing and gets the
+  # desktop's home, a lean node gets none. A base-home test sets it `true` on an
+  # otherwise-lean TestVm node to isolate the home profile on a minimal system —
+  # the ONLY case that authors this flag, and it IS the cluster-decision-4 flag.
+  includeHome ? null,
 }:
 
 let
@@ -142,17 +194,23 @@ let
 
   vmHost = vmHostServiceOf hostHorizon;
 
-  # The guest's index among the host's hosted TestVm guests, by sorted name —
-  # the deterministic key test-vm-host.nix uses to slice per-guest endpoints.
-  hostedGuestNames = lib.sort lib.lessThan (
-    lib.attrNames (
-      lib.filterAttrs (
-        _: exNode:
-        (exNode.machine.superNode or null) == hostNode && (exNode.behavesAs.testVm or false)
-      ) (hostHorizon.exNodes or { })
-    )
-  );
+  # KVM availability is a closed-set domain atom on the VmHost service —
+  # `Available` (hardware acceleration present) or `Absent` (none). When the
+  # cluster declares Absent (or no VmHost), the generator emits a TCG (software)
+  # QEMU substrate rather than depending on the builder host happening to have
+  # /dev/kvm. Read off cluster data, the same atom test-vm-host.nix reads.
+  kvmAvailable = vmHost != null && (vmHost.kvm or "Absent") == "Available";
+
+  # The host's declared capacity ceiling, if any (maximumGuests is omitted from
+  # the projection when the cluster authored no ceiling).
+  maximumGuests = if vmHost == null then null else (vmHost.maximumGuests or null);
+
+  # The guest's index among the host's hosted POD guests, by sorted name — the
+  # deterministic key test-vm-host.nix uses to slice per-guest endpoints. C5:
+  # the hosted set is every Pod-on-host node (any role), not just lean TestVms.
+  hostedGuestNames = hostedPodNamesOf hostNode hostHorizon;
   guestIndex = lib.lists.findFirstIndex (name: name == guestName) null hostedGuestNames;
+  hostedCount = lib.length hostedGuestNames;
 
   # The host-side endpoint sliced from the cluster-authored subnet (asserted, so
   # a host that forgot to declare VmHost fails the test rather than silently
@@ -168,22 +226,48 @@ let
     inherit substrate deployKey;
   };
 
+  # An unfree-allowing pkgs for the runner (see the call site for why). Built
+  # from the same locked nixpkgs the flake pins, only flipping allowUnfree.
+  unfreePkgs = import inputs.nixpkgs {
+    inherit system;
+    config.allowUnfree = true;
+  };
+
   # ---- substrate sanity, asserted from cluster data (Spirit [dqg3]) ----------
   # These are model invariants the generator depends on; a violation is a
   # cluster-authoring error, surfaced loudly at eval rather than as a mid-boot
   # mystery.
-  guestIsTestVm = guestHorizon.node.behavesAs.testVm or false;
+  #
+  # C5 relaxation: the guest must be a Pod-SUBSTRATE node (a VM the host runs),
+  # NOT necessarily a lean TestVm. Its ROLE (Edge / Router / TestVm / ...) is
+  # whatever its projection derived; the generator tests that role's profile.
+  guestIsPod = (machine.species or null) == "Pod";
   hostDeclaresVmHost = vmHost != null;
   hostHostsGuest = guestIndex != null;
+  # The host's hosted Pod set must fit its declared ceiling (over-subscription
+  # is a cluster-authoring error). Absent ceiling -> no limit.
+  capacityOk = maximumGuests == null || hostedCount <= maximumGuests;
+
+  # includeHome is DERIVED from the role unless the author overrode it: a lean
+  # TestVm defaults to no home profile (the deploy-target case never wants it),
+  # every other role keeps the production home profile. deployment.includeHome
+  # ALONE then decides home in CriomOS (test-vm-guest.nix no longer re-wipes it).
+  # So an Edge test gets the desktop's home for free; a base-home test sets the
+  # override `true` to isolate the home profile on an otherwise-lean TestVm node
+  # (proposal decision 4 — reuse includeHome).
+  guestIsTestVm = guestHorizon.node.behavesAs.testVm or false;
+  includeHomeResolved = if includeHome != null then includeHome else !guestIsTestVm;
 
   assertModel =
     value:
-    assert lib.assertMsg guestIsTestVm
-      "mkVmTest: vmNode ${vmNode} is not a TestVm guest (behavesAs.testVm is false in its projection).";
+    assert lib.assertMsg guestIsPod
+      "mkVmTest: vmNode ${vmNode} is not a Pod-substrate node (machine.species != Pod in its projection); only a Pod node runs as a VM on a host.";
     assert lib.assertMsg hostDeclaresVmHost
       "mkVmTest: hostNode ${hostNode} declares no VmHost service in its projection; it cannot host a test VM.";
     assert lib.assertMsg hostHostsGuest
-      "mkVmTest: hostNode ${hostNode} does not host vmNode ${vmNode} (no exNode with superNode == ${hostNode} && behavesAs.testVm named ${vmNode}).";
+      "mkVmTest: hostNode ${hostNode} does not host vmNode ${vmNode} (no Pod exNode with superNode == ${hostNode} named ${vmNode}).";
+    assert lib.assertMsg capacityOk
+      "mkVmTest: hostNode ${hostNode} hosts ${toString hostedCount} Pod guests but declares maximum_guests = ${toString maximumGuests}; raise the ceiling or move guests.";
     value;
 
   guestModuleFromCluster =
@@ -197,6 +281,14 @@ let
         inputs.criomos.inputs.sops-nix.nixosModules.sops
         substrateProfile.guestModule
       ]
+      # The home-manager NixOS module is only needed when the home profile is
+      # kept (a production CriomOS consumer imports it alongside nixosModules.
+      # criomos; the lean default path never references home-manager.*). Import
+      # it exactly when includeHome is on, so a base-home guest gets the
+      # `home-manager.users` option the projection's userHomes.nix populates.
+      ++ lib.optionals includeHomeResolved [
+        inputs.criomos.inputs.home-manager.nixosModules.home-manager
+      ]
       ++ extraGuestModules;
 
       # --- size: 100% from the guest's projected machine facts ---------------
@@ -204,6 +296,10 @@ let
         cores = machine.cores;
         memorySize = machine.ramGb * 1024; # MiB
         diskSize = machine.diskGb * 1024; # MiB
+        # accel: cluster-decided. kvm Available -> KVM; Absent -> TCG software.
+        # runNixOSTest's qemu-vm node uses KVM when /dev/kvm exists; force TCG
+        # off the host's declared VmHost.kvm when the cluster says no hardware.
+        qemu.options = lib.mkIf (!kvmAvailable) [ "-accel tcg" ];
       };
 
       # CriomOS sets system.stateVersion via its modules; pin it for the test
@@ -212,7 +308,16 @@ let
     };
 in
 assertModel (
-  pkgs.testers.runNixOSTest {
+  # The runner's pkgs allows unfree. A heavy role profile legitimately reaches
+  # unfree leaves (an Edge desktop's nautilus archive support pulls unrar, etc.);
+  # production CriomOS deploys build with NIXPKGS_ALLOW_UNFREE=1, so the hermetic
+  # test — which builds its OWN pkgs and pins each node's nixpkgs.pkgs from this
+  # one (making nixpkgs.config read-only on the node) — must grant the same
+  # allowance HERE, where the test's pkgs is configured. runNixOSTest threads
+  # THIS pkgs onto every node, so configuring it once covers the guest. A
+  # test-harness concern matching the production build environment, not an OS
+  # policy change.
+  unfreePkgs.testers.runNixOSTest {
     name = "vm-test-${cluster}-${vmNode}";
 
     # The guest is a real CriomOS node built from its projection — never a
@@ -226,8 +331,11 @@ assertModel (
         microvm = inputs.criomos.inputs.microvm;
         secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
       };
+      # includeHome derived from the role (a lean TestVm drops home; any other
+      # role keeps the production home profile) — this is what makes a base-home
+      # test simply "a node whose role keeps home", with zero per-test authoring.
       deployment = {
-        includeHome = false;
+        includeHome = includeHomeResolved;
       };
     };
 
@@ -240,7 +348,13 @@ assertModel (
     # Carry the derived facts in the derivation env purely for observability
     # (they prove the address came from cluster data, not a literal).
     passthru = {
-      inherit hostTapAddress guestIndex;
+      inherit
+        hostTapAddress
+        guestIndex
+        kvmAvailable
+        hostedCount
+        ;
+      includeHome = includeHomeResolved;
       guestDomain = guestDomainOf guestHorizon;
     };
   }
