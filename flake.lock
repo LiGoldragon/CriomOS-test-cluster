@@ -708,11 +708,11 @@
         "system": "system"
       },
       "locked": {
-        "lastModified": 1781511147,
-        "narHash": "sha256-HZXmVFyLcn+337VrE4fx2fPezQGVNSRwxcr0lHlDCQI=",
+        "lastModified": 1781512372,
+        "narHash": "sha256-bRluUxO9hTB0j52IEq4twOplQ1bJ+310buXbR+jeGcA=",
         "owner": "LiGoldragon",
         "repo": "CriomOS",
-        "rev": "28ad489cff02a083bcd24efd98e575e60ed10396",
+        "rev": "084b00da8e3a580febf46c1438ba843fd5e901fe",
         "type": "github"
       },
       "original": {
