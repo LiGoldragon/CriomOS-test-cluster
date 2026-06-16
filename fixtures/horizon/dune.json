@@ -37,7 +37,7 @@
       "superUser": "aria",
       "chipGen": null,
       "ramGb": 4,
-      "diskGb": null,
+      "diskGb": 40,
       "location": null
     },
     "linkLocalIps": [],

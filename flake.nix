@@ -49,6 +49,158 @@
           inherit (inputs.nixpkgs) lib;
           pkgs = inputs.nixpkgs.legacyPackages.${system};
           horizonCli = inputs.horizon.packages.${system}.default;
+
+          # ================================================================
+          # AUTO-PICKUP: declaring a test-VM node IS getting a test (§1).
+          #
+          # The flake STOPS hand-listing per-node checks. Instead it iterates
+          # the Pod-on-a-VmHost set the projection already names
+          # (`hostedPodNamesOf` in lib/mkVmTest.nix) and generates ONE check
+          # per declared node. Add a guest to the cluster -> it gets a check,
+          # with no flake edit. `mkVmTest` itself is UNCHANGED.
+          #
+          # Each node gets the role-derived STANDARD fallback testScript
+          # (lib/standardTest.nix) UNLESS it appears in the `customTests`
+          # registry below, which overrides with a bespoke single-concept
+          # script (the desktop + home anchors). Capacity / subnet safety
+          # comes free — mkVmTest's `assertModel` already fails at eval if the
+          # hosted set over-subscribes the host's VmHost ceiling or subnet.
+          # ================================================================
+
+          mkVmTest = import ./lib/mkVmTest.nix { inherit inputs pkgs self system; };
+          standardTestFor = import ./lib/standardTest.nix { inherit lib; };
+
+          # Read a committed horizon projection — the same fromJSON(readFile)
+          # artifact mkVmTest reads, kept honest by projections-match-fieldlab.
+          readHorizon =
+            node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
+
+          # The python runNixOSTest driver mangles a node name's dashes to
+          # underscores for its machine binding: edge-desktop -> edge_desktop.
+          machineNameOf = node: builtins.replaceStrings [ "-" ] [ "_" ] node;
+
+          # The host whose hosted guests are auto-picked-up into checks. atlas
+          # is the only declared VmHost today; a second host (prometheus) is a
+          # data-only addition that this same iteration would pick up.
+          vmHostNode = "atlas";
+
+          hostHorizon = readHorizon vmHostNode;
+
+          # The hosted Pod set the host runs — the exact pickup predicate the
+          # generator already encodes. For atlas this is, by declaration alone:
+          #   [ base-home dune edge-desktop mercury ]
+          hostedNodes = lib.sort lib.lessThan (
+            lib.attrNames (
+              lib.filterAttrs (
+                _: exNode:
+                (exNode.machine.superNode or null) == vmHostNode
+                && (exNode.machine.species or null) == "Pod"
+              ) (hostHorizon.exNodes or { })
+            )
+          );
+
+          # includeHome resolved the SAME way mkVmTest derives it (a lean
+          # TestVm drops home; every other role keeps the production home
+          # profile), so the standard test's home layer agrees with the home
+          # profile the generator actually builds. A customTests entry may
+          # override this knob explicitly.
+          includeHomeFor = node: !(readHorizon node).node.behavesAs.testVm or false;
+
+          # ---- the CUSTOM OVERRIDE REGISTRY (§1.3) ------------------------
+          # A per-node map of bespoke specs. A node present here uses its
+          # custom script (and any extra mkVmTest knob — includeHome,
+          # substrate, extraGuestModules); a node absent falls through to the
+          # role-derived standard fallback. The two original hand-authored
+          # anchors MOVE here verbatim, keeping their rich single-concept
+          # assertions (Spirit [xxgp]). This is the single coexistence seam.
+          customTests = {
+            # The headline COMPLEX-OS anchor. edge-desktop is an Edge Pod; its
+            # projection derives behavesAs.edge, so edge/default.nix emits the
+            # greetd (regreet) display manager, polkit, dbus, gnome-keyring —
+            # the complex desktop OS. The author names none of it. This is a
+            # RICHER version of the standard edge fragment (it additionally
+            # narrates the keyring PAM + the niri session), kept hand-authored.
+            edge-desktop.testScript = ''
+              # the desktop support bus comes up
+              edge_desktop.wait_for_unit("dbus.service")
+              # the display manager is greetd (regreet greeter) — the KEY design
+              # point of an Edge profile: a node you log into graphically. greetd
+              # reaches its active greeter at boot, and its PAM starts the keyring
+              # ("gkr-pam: gnome-keyring-daemon started properly" in the boot log).
+              edge_desktop.wait_for_unit("greetd.service")
+              # the desktop keyring + the niri graphical session are installed —
+              # the Secret portal binds gnome-keyring, the display manager runs
+              # niri. Both daemons on PATH prove the desktop stack is composed.
+              edge_desktop.succeed("test -x /run/current-system/sw/bin/gnome-keyring-daemon")
+              edge_desktop.succeed("test -x /run/current-system/sw/bin/niri")
+              # polkit is dbus/socket-activated (not active until first call), so
+              # assert it is the system's installed authorization daemon.
+              edge_desktop.succeed("systemctl cat polkit.service | grep -q polkitd")
+            '';
+
+            # The headline HOME-PROFILE anchor. base-home is a lean TestVm Pod;
+            # includeHome = true (the one cluster-decided home flag) ISOLATES
+            # the home profile on a minimal system, so the test proves the
+            # home-manager activation in isolation, not entangled with a desktop.
+            base-home = {
+              includeHome = true;
+              testScript = ''
+                # the per-user home-manager activation generation runs at boot
+                base_home.wait_for_unit("home-manager-aria.service")
+                base_home.succeed("systemctl is-active home-manager-aria.service")
+                # a home PROGRAM landed in the user's config — programs.git from the
+                # base (min) home profile writes ~/.config/git/config with the
+                # project's pull.rebase + beads.role + the projected user email.
+                # Asserting the generated file proves the home profile applied, not
+                # just that the activation unit ran. (String values render quoted;
+                # booleans bare — git's own ini format.)
+                base_home.succeed("test -e /home/aria/.config/git/config")
+                base_home.succeed("grep -q 'rebase = true' /home/aria/.config/git/config")
+                base_home.succeed("grep -q 'role = \"maintainer\"' /home/aria/.config/git/config")
+                base_home.succeed("grep -q 'email = \"aria@fieldlab.criome.net\"' /home/aria/.config/git/config")
+              '';
+            };
+          };
+
+          # Every auto-picked node belongs to the same fieldlab cluster, hosted
+          # on the same VmHost host (atlas). cluster/hostNode are fixed; only
+          # vmNode + the resolved script/knobs vary per node.
+          cluster = "fieldlab";
+
+          # Resolve one node into a complete mkVmTest spec: the custom entry if
+          # present, else the standard role-derived fallback. The standard path
+          # passes BOTH the derived includeHome and the matching standard
+          # testScript, so the home layer never disagrees with the built profile.
+          # A customTests entry contributes only its bespoke knobs (testScript,
+          # includeHome, substrate, extraGuestModules) on top of the pairing.
+          specFor =
+            node:
+            let
+              guestHorizon = readHorizon node;
+              homeKept = includeHomeFor node;
+              standardSpec = {
+                includeHome = homeKept;
+                testScript = standardTestFor {
+                  machineName = machineNameOf node;
+                  nodeName = guestHorizon.node.name;
+                  behavesAs = guestHorizon.node.behavesAs;
+                  users = guestHorizon.users or { };
+                  includeHome = homeKept;
+                };
+              };
+            in
+            {
+              inherit cluster;
+              hostNode = vmHostNode;
+              vmNode = node;
+            }
+            // (customTests.${node} or standardSpec);
+
+          # The auto-generated per-node checks, keyed `vm-<node>`. Declaring a
+          # node in the cluster's hosted Pod set yields exactly one of these.
+          autoVmChecks = lib.genAttrs (map (n: "vm-${n}") hostedNodes) (
+            checkName: mkVmTest (specFor (lib.removePrefix "vm-" checkName))
+          );
         in
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
@@ -112,126 +264,44 @@
             touch "$out"
           '';
         }
-        // lib.optionalAttrs (system == "x86_64-linux") {
-          # The first runNixOSTest in the stack, generated by mkVmTest (C4) from
-          # nothing but cluster data: the guest (mercury) is a real CriomOS
-          # nixosSystem built from its horizon projection, sized from its
-          # projected machine facts, with the test-substrate profile applied —
-          # the author writes only (cluster, hostNode, vmNode, testScript).
-          #
-          # PATTERN: ONE concept per test (Spirit [xxgp]) — this proves the
-          # single invariant "a cluster-data-generated TestVm guest boots to a
-          # working sshd". It is the end-to-end proof that the generator
-          # produces a genuinely runnable, passing test, not just a buildable
-          # one. Named for that invariant.
-          test-vm-guest-boots-sshd = (import ./lib/mkVmTest.nix {
-            inherit inputs pkgs self system;
-          }) {
-            cluster = "fieldlab";
-            hostNode = "atlas";
-            vmNode = "mercury";
-            testScript = ''
-              mercury.wait_for_unit("sshd.service")
-              mercury.succeed("systemctl is-active sshd.service")
-            '';
-          };
-
-          # ====================================================================
-          # The readable COMPLEX-OS + HOME-PROFILE suite (C5). Each check is a
-          # mkVmTest spec for which the author writes ONLY the declarative tuple
-          # (cluster, hostNode, vmNode, testScript) — the heavy role PROFILE
-          # under test comes entirely from the node's PROJECTION (its species ->
-          # behavesAs facets -> which CriomOS module trees light up), never a
-          # hand-stub (Spirit [aipc]). The two anchors below prove the suite
-          # delivers genuine "complex os and home-profile testing".
-          # ====================================================================
-
-          # PATTERN: a COMPLEX-OS profile boots its desktop stack. ONE concept —
-          # "an Edge node's projection lights the display-manager + desktop
-          # support services, and they come up in a real boot" (Spirit [xxgp]).
-          # edge-desktop is an Edge Pod in fieldlab.nota; its projection derives
-          # behavesAs.edge = true, so edge/default.nix emits greetd (regreet),
-          # polkit, dbus, gnome-keyring — the complex desktop OS. The author
-          # never names any of that; it flows from the role. This is the headline
-          # "complex OS" anchor.
-          edge-desktop-boots-greeter = (import ./lib/mkVmTest.nix {
-            inherit inputs pkgs self system;
-          }) {
-            cluster = "fieldlab";
-            hostNode = "atlas";
-            vmNode = "edge-desktop";
-            testScript = ''
-              # the desktop support bus comes up
-              edge_desktop.wait_for_unit("dbus.service")
-              # the display manager is greetd (regreet greeter) — the KEY design
-              # point of an Edge profile: a node you log into graphically. greetd
-              # reaches its active greeter at boot, and its PAM starts the keyring
-              # ("gkr-pam: gnome-keyring-daemon started properly" in the boot log).
-              edge_desktop.wait_for_unit("greetd.service")
-              # the desktop keyring + the niri graphical session are installed —
-              # the Secret portal binds gnome-keyring, the display manager runs
-              # niri. Both daemons on PATH prove the desktop stack is composed.
-              edge_desktop.succeed("test -x /run/current-system/sw/bin/gnome-keyring-daemon")
-              edge_desktop.succeed("test -x /run/current-system/sw/bin/niri")
-              # polkit is dbus/socket-activated (not active until first call), so
-              # assert it is the system's installed authorization daemon.
-              edge_desktop.succeed("systemctl cat polkit.service | grep -q polkitd")
-            '';
-          };
-
-          # PATTERN: a HOME-PROFILE activates on a lean node. ONE concept —
-          # "deployment.includeHome on an otherwise-minimal node activates the
-          # home-manager base generation, and a home program lands in the user's
-          # config" (Spirit [xxgp]). base-home is a lean TestVm Pod; the spec
-          # sets includeHome = true (proposal decision 4 — the one cluster-decided
-          # home flag) to ISOLATE the home profile on a minimal system, so the
-          # test proves the home-manager activation in isolation, not entangled
-          # with a desktop. This is the headline "home-profile" anchor.
-          # ====================================================================
-          # C6 — the lojix-deploy SMOKE TEST. The REAL production deploy path
-          # (the FIXED lojix daemon, <drv>^* fix) under a HERMETIC, REPEATABLE
-          # 2-node runNixOSTest: a deployer node runs the daemon and deploys the
-          # TARGET's projected config into the target node; the target's system
-          # profile generation becomes the lojix-deployed closure (a real
-          # nixos-system, never the bare .drv). Psyche-scoped to
-          # generation-activation (NOT the full BootOnce reboot). See
-          # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,
-          # PATTERN comment there (Spirit [xxgp]); the integration risks
-          # (offline eval+build, address resolution, ssh-ng/store-copy, silent
-          # daemon) are unblocked IN the test (Spirit [dqg3]).
-          # ====================================================================
-          lojix-deploy-smoke = (import ./lib/mkDeployTest.nix {
-            inherit inputs pkgs self system;
-          }) {
-            cluster = "fieldlab";
-            hostNode = "atlas";
-            vmNode = "mercury";
-          };
-
-          base-home-activates = (import ./lib/mkVmTest.nix {
-            inherit inputs pkgs self system;
-          }) {
-            cluster = "fieldlab";
-            hostNode = "atlas";
-            vmNode = "base-home";
-            includeHome = true;
-            testScript = ''
-              # the per-user home-manager activation generation runs at boot
-              base_home.wait_for_unit("home-manager-aria.service")
-              base_home.succeed("systemctl is-active home-manager-aria.service")
-              # a home PROGRAM landed in the user's config — programs.git from the
-              # base (min) home profile writes ~/.config/git/config with the
-              # project's pull.rebase + beads.role + the projected user email.
-              # Asserting the generated file proves the home profile applied, not
-              # just that the activation unit ran. (String values render quoted;
-              # booleans bare — git's own ini format.)
-              base_home.succeed("test -e /home/aria/.config/git/config")
-              base_home.succeed("grep -q 'rebase = true' /home/aria/.config/git/config")
-              base_home.succeed("grep -q 'role = \"maintainer\"' /home/aria/.config/git/config")
-              base_home.succeed("grep -q 'email = \"aria@fieldlab.criome.net\"' /home/aria/.config/git/config")
-            '';
-          };
-        }
+        // lib.optionalAttrs (system == "x86_64-linux") (
+          # ==================================================================
+          # The AUTO-PICKUP suite (§1). One `vm-<node>` check per declared
+          # Pod-on-atlas guest, generated above with zero per-node authoring:
+          #   vm-base-home    (custom: home-profile anchor)
+          #   vm-dune         (standard: Edge fallback — boot+sshd+desktop)
+          #   vm-edge-desktop (custom: complex-OS desktop anchor)
+          #   vm-mercury      (standard: lean TestVm fallback — boot+sshd)
+          # dune is the proof: it had NO check before; declaring it a Pod on
+          # atlas now yields a real Edge standard check by declaration alone.
+          # ==================================================================
+          autoVmChecks
+          // {
+            # ================================================================
+            # C6 — the lojix-deploy SMOKE TEST stays one EXPLICIT call, OUTSIDE
+            # the per-node iteration: it is deploy-MACHINERY (the FIXED lojix
+            # daemon, <drv>^* fix) under a HERMETIC, REPEATABLE 2-node
+            # runNixOSTest — a deployer node deploys the TARGET's projected
+            # config into the target node; the target's system profile
+            # generation becomes the lojix-deployed closure (a real
+            # nixos-system, never the bare .drv). Psyche-scoped to
+            # generation-activation (NOT the full BootOnce reboot). See
+            # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,
+            # PATTERN comment there (Spirit [xxgp]); the integration risks
+            # (offline eval+build, address resolution, ssh-ng/store-copy, silent
+            # daemon) are unblocked IN the test (Spirit [dqg3]). It proves a
+            # representative node (mercury), not every node, so it is NOT
+            # auto-generated.
+            # ================================================================
+            lojix-deploy-smoke = (import ./lib/mkDeployTest.nix {
+              inherit inputs pkgs self system;
+            }) {
+              cluster = "fieldlab";
+              hostNode = "atlas";
+              vmNode = "mercury";
+            };
+          }
+        )
       );
 
       packages = forSystems (

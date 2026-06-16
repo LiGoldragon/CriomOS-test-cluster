@@ -80,7 +80,7 @@
     dune (Edge
       Min
       Max
-      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) None None)
+      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) (Some 40) None)
       (Qwerty
         Uefi
         {
