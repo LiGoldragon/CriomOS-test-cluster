@@ -723,11 +723,11 @@
         "system": "system"
       },
       "locked": {
-        "lastModified": 1781516908,
-        "narHash": "sha256-+sa9/5j7UNz8j3BSItPn6Vgc+nAqSQ2fY3+c6qeZYKE=",
+        "lastModified": 1781603267,
+        "narHash": "sha256-qFA9MFKxvSnBom0Zo1FKBlUrsrDHjZBdnoppSN4aVuA=",
         "owner": "LiGoldragon",
         "repo": "CriomOS",
-        "rev": "724fae1a4b2d116458525d243e9e64281acf9d29",
+        "rev": "42bc62b30c46ae99afd77026c68afcd598d07d52",
         "type": "github"
       },
       "original": {
@@ -1925,11 +1925,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781509874,
-        "narHash": "sha256-Ws+QqNHDAdL5F7kcRg/mNkRkVvexSNbd+fVWSZcNbDA=",
+        "lastModified": 1781602823,
+        "narHash": "sha256-H5iYr2WVzkSlB1hEQYArghxP7XUCBrV/4Z0VbYi+FNc=",
         "owner": "LiGoldragon",
         "repo": "horizon-rs",
-        "rev": "fe7182f10820b43a2b72c71ba6078a2bd0654935",
+        "rev": "8fb25be9db4e379b82811e708d59a0efb6d8b16e",
         "type": "github"
       },
       "original": {

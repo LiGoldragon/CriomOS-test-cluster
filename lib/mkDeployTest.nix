@@ -119,6 +119,26 @@ let
   guestName = guestHorizon.node.name;
   machine = guestHorizon.node.machine;
 
+  # The host's projection — read for the SAME model assertion mkVmTest makes, so
+  # the smoke FAILS if the deploy target stops being a Pod on the declared
+  # VmHost (finding 2: hostNode was accepted but never used). The host endpoint
+  # is not actually wired in this hermetic deploy (the runner owns the network),
+  # but the host->guest cluster relation is the model claim C6 rests on, so it
+  # is asserted from data here, not hand-waved.
+  hostHorizon = readHorizon hostNode;
+
+  # The host's cluster-authored VmHost service (C1) — services is a list of
+  # single-key attrsets, one per NodeService variant.
+  hostVmHostService = lib.findFirst (service: service ? VmHost) null (
+    hostHorizon.node.services or [ ]
+  );
+  hostDeclaresVmHost = hostVmHostService != null;
+
+  # The target must be a Pod-substrate node whose machine.superNode names the
+  # declared host (the exact "vmNode is a Pod on this VmHost" claim).
+  vmNodeIsPod = (machine.species or null) == "Pod";
+  vmNodeHostedByHost = (machine.superNode or null) == hostNode;
+
   clusterName = guestHorizon.cluster.name or cluster;
   criomeDomainName = guestHorizon.node.criomeDomainName or "${guestName}.${clusterName}.criome";
 
@@ -359,9 +379,25 @@ let
 
       system.stateVersion = lib.mkDefault "26.05";
     };
+
+  # The C6 model invariant, asserted from cluster data (finding 2): the deploy
+  # target is a Pod on the DECLARED VmHost host. A violation is a cluster-
+  # authoring error — surfaced loudly at eval, not as a confusing mid-deploy
+  # failure. This mirrors mkVmTest's assertModel and makes hostNode load-bearing
+  # rather than an ignored argument: the smoke fails if the target stops being a
+  # Pod on this VmHost.
+  assertModel =
+    value:
+    assert lib.assertMsg hostDeclaresVmHost
+      "mkDeployTest: hostNode ${hostNode} declares no VmHost service in its projection; it cannot host the deploy target ${vmNode}.";
+    assert lib.assertMsg vmNodeIsPod
+      "mkDeployTest: vmNode ${vmNode} is not a Pod-substrate node (machine.species != Pod in its projection); only a Pod node runs as a VM on a host.";
+    assert lib.assertMsg vmNodeHostedByHost
+      "mkDeployTest: vmNode ${vmNode} machine.superNode is ${toString (machine.superNode or null)}, not the declared hostNode ${hostNode}; the target is not hosted on this VmHost.";
+    value;
 in
 
-inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
+assertModel (inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
   name = "lojix-deploy-smoke-${cluster}-${vmNode}";
 
   # Both nodes carry the projected horizon as a specialArg exactly as production
@@ -476,10 +512,44 @@ inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
     # it ADVANCED past the booted base (a real deploy, not a no-op).
     assert profile_target != base_system, "generation did not advance past the base"
 
-    # also confirm the deploy is recorded in the daemon's durable state (read via
-    # the ORDINARY CLI with no client attached) — the deploy-job advanced.
+    # --- ASSERT: the daemon's DURABLE deploy-job record corroborates (Spirit
+    # [vcin]: a print is not proof — assert the real durable record) -----------
+    # The ordinary `(Query (ByNode ...))` reply renders the schema-owned
+    # GenerationListing:
+    #   (Queried ([ (Generation <genId> <depId> <cluster> <node>
+    #                <kind> <activationKind> <slot> <closurePath>) ... ]
+    #             (DatabaseMarker <seq> <digest>)))
+    # The daemon is silent and the live-set write commits after the target's
+    # profile flip, so poll the durable Query until the node's record carries the
+    # deployed closure, then assert the three load-bearing facts: the node name,
+    # the terminal generation SLOT, and the deployed ClosurePath (the SAME
+    # closure the profile assertion checked). The durable record for this deploy
+    # is `(<gen> <dep> ${cluster} ${vmNode} FullOs Boot Current <closure>)` —
+    # the live generation lands in the `Current` slot (the terminal deployed
+    # state the query exposes), so `Current` is the durable state this proves.
+    expected_slot = "Current"
+    deployer.wait_until_succeeds(
+        "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
+        f"${lojixClis}/bin/lojix '(Query (ByNode (${cluster} ${vmNode} None)))' "
+        f"| grep -F {expected_closure}",
+        timeout=600,
+    )
     final_query = query_node()
     print("durable deploy state:", final_query)
+    # Assert the schema-owned positional Generation fragment — node + kind +
+    # activationKind + terminal slot together (`${vmNode} FullOs Boot Current`),
+    # not a loose lone-`Current` substring that could match elsewhere. This ties
+    # the deployed node to its terminal generation slot in one schema shape.
+    node_generation = "${vmNode} FullOs Boot " + expected_slot
+    assert node_generation in final_query, (
+        f"durable Query reply does not record {node_generation!r}: {final_query}"
+    )
+    # and the deployed ClosurePath in that same record equals the SAME closure
+    # the profile assertion verified — durable record and on-target generation
+    # agree.
+    assert expected_closure in final_query, (
+        f"durable Query reply does not record the deployed closure {expected_closure}: {final_query}"
+    )
 
     # --- ASSERT: the activated artifact is a REAL nixos-system (the <drv>^* fix
     # held) — a .drv would have NONE of this tree -----------------------------
@@ -494,4 +564,4 @@ inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
     print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
           "the target's system profile generation is the deployed closure.")
   '';
-}
+})

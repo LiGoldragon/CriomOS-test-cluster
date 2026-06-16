@@ -144,6 +144,29 @@ let
   # Strip the prefix length from a CIDR / address, leaving the dotted-decimal.
   bareAddress = value: if value == null then null else builtins.head (lib.splitString "/" value);
 
+  # The CIDR prefix length (the bit after `/`), as an int. `null` for a bare
+  # address with no prefix.
+  prefixLengthOf =
+    value:
+    let
+      parts = lib.splitString "/" value;
+    in
+    if value == null || lib.length parts < 2 then null else lib.toInt (lib.elemAt parts 1);
+
+  # Usable host slots in an IPv4 CIDR — the count of host endpoints the
+  # generator can hand to guests. Mirrors horizon-rs TapSubnet::usable_host_count
+  # (and Ipv4Net::hosts): 2^(32 - prefix) addresses minus the network and
+  # broadcast addresses for any prefix shorter than /31. The host TapSubnet is
+  # IPv4-only (enforced in horizon-rs), so this is always a /N IPv4 prefix.
+  twoToThe = exponent: lib.foldl' (acc: _: acc * 2) 1 (lib.range 1 exponent);
+  usableHostCount =
+    cidr:
+    let
+      prefix = prefixLengthOf cidr;
+      total = twoToThe (32 - prefix);
+    in
+    if prefix == null then null else if prefix >= 31 then total else total - 2;
+
   # Slice the host-side endpoint for a guest out of the host's guest_subnet,
   # mirroring test-vm-host.nix's hostTapAddress (base + index + 1). The hermetic
   # runNixOSTest path does not actually wire this tap (it uses the driver's own
@@ -248,6 +271,16 @@ let
   # is a cluster-authoring error). Absent ceiling -> no limit.
   capacityOk = maximumGuests == null || hostedCount <= maximumGuests;
 
+  # The hosted set (and any declared ceiling) must also fit the guest_subnet's
+  # USABLE HOST SLOTS — each guest's host endpoint is sliced base + (index + 1)
+  # out of this subnet, so a subnet too small for the guests would silently
+  # slice outside the declared network (finding 1). The required slot count is
+  # the larger of the actual hosted set and the advertised ceiling, so a host
+  # whose ceiling already over-subscribes the subnet fails even before it fills.
+  subnetHostSlots = if vmHost == null then null else usableHostCount (vmHost.guestSubnet or null);
+  requiredSlots = if maximumGuests == null then hostedCount else lib.max hostedCount maximumGuests;
+  subnetCapacityOk = subnetHostSlots == null || requiredSlots <= subnetHostSlots;
+
   # includeHome is DERIVED from the role unless the author overrode it: a lean
   # TestVm defaults to no home profile (the deploy-target case never wants it),
   # every other role keeps the production home profile. deployment.includeHome
@@ -268,6 +301,8 @@ let
       "mkVmTest: hostNode ${hostNode} does not host vmNode ${vmNode} (no Pod exNode with superNode == ${hostNode} named ${vmNode}).";
     assert lib.assertMsg capacityOk
       "mkVmTest: hostNode ${hostNode} hosts ${toString hostedCount} Pod guests but declares maximum_guests = ${toString maximumGuests}; raise the ceiling or move guests.";
+    assert lib.assertMsg subnetCapacityOk
+      "mkVmTest: hostNode ${hostNode} needs ${toString requiredSlots} guest tap slots but its VmHost.guest_subnet ${toString (vmHost.guestSubnet or null)} has only ${toString subnetHostSlots} usable host addresses; widen the subnet or reduce the hosted set.";
     value;
 
   guestModuleFromCluster =
