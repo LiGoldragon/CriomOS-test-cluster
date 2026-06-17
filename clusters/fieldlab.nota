@@ -5,19 +5,19 @@
     atlas (LargeAiRouter
       Max
       Max
-      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None [])
+      (Metal (Some X86_64) 8 (Some fixture-router) None None None None (Some 64) None None [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/disk/by-label/FIELDLAB_ATLAS] Ext4 [])
+          / (/dev/disk/by-label/FIELDLAB_ATLAS Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000]
-        (Some [AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000
+        (Some AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
         (Some
-          ([aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa] [200:db8:1::1] [300:db8:1::])))
+          (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 200:db8:1::1 300:db8:1::)))
       []
-      (Some [10.77.0.1/24])
+      (Some 10.77.0.1/24)
       None
       False
       False
@@ -26,23 +26,23 @@
       False
       (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords)) None))
       (Some True)
-      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache) (VmHost [169.254.100.0/22] Available (Some 4))])
+      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache) (VmHost 169.254.100.0/22 Available (Some 4))])
     beacon (MediaBroadcast
       Medium
       Max
-      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None [])
+      (Metal (Some X86_64) 6 (Some fixture-builder) None None None None (Some 32) None None [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/disk/by-label/FIELDLAB_BEACON] Ext4 [])
+          / (/dev/disk/by-label/FIELDLAB_BEACON Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000]
-        (Some [BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000
+        (Some BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB)
         (Some
-          ([bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb] [200:db8:1::2] [300:db8:1:1::])))
+          (bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 200:db8:1::2 300:db8:1:1::)))
       []
-      (Some [10.77.0.2/24])
+      (Some 10.77.0.2/24)
       None
       False
       False
@@ -55,19 +55,19 @@
     cedar (Edge
       Medium
       Max
-      (Metal (Some X86_64) 4 (Some [ThinkPadT14Gen2Intel]) None None None (Some 12) (Some 16) None None [])
+      (Metal (Some X86_64) 4 (Some ThinkPadT14Gen2Intel) None None None (Some 12) (Some 16) None None [])
       (Colemak
         Uefi
         {
-          [/] ([/dev/disk/by-label/FIELDLAB_CEDAR] Ext4 [])
+          / (/dev/disk/by-label/FIELDLAB_CEDAR Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000]
-        (Some [CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC])
+      (AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000
+        (Some CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)
         (Some
-          ([cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc] [200:db8:1::3] [300:db8:1:2::])))
+          (cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc 200:db8:1::3 300:db8:1:2::)))
       []
-      (Some [10.77.0.3/24])
+      (Some 10.77.0.3/24)
       None
       False
       True
@@ -80,19 +80,19 @@
     dune (Edge
       Min
       Max
-      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) (Some 40) None [])
+      (Pod (Some X86_64) 2 (Some fixture-pod) None (Some atlas) (Some aria) None (Some 4) (Some 40) None [])
       (Qwerty
         Uefi
         {
-          [/] ([tmpfs] Tmpfs [])
+          / (tmpfs Tmpfs [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000]
-        (Some [DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000
+        (Some DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD)
         (Some
-          ([dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd] [200:db8:1::4] [300:db8:1:3::])))
+          (dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd 200:db8:1::4 300:db8:1:3::)))
       []
-      (Some [10.77.0.4/24])
+      (Some 10.77.0.4/24)
       None
       False
       False
@@ -105,19 +105,19 @@
     mercury (TestVm
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some home-lab) [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/vda] Ext4 [])
+          / (/dev/vda Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000]
-        (Some [EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIMercuryFixtureSshPublicKeyBody0000000
+        (Some EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE)
         (Some
-          ([eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee] [200:db8:1::7] [300:db8:1:6::])))
+          (eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee 200:db8:1::7 300:db8:1:6::)))
       []
-      (Some [10.77.0.7/24])
+      (Some 10.77.0.7/24)
       None
       False
       False
@@ -130,19 +130,19 @@
     edge-desktop (Edge
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some home-lab) [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/vda] Ext4 [])
+          / (/dev/vda Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIEdgeDesktopFixtureSshPublicKeyBody00]
-        (Some [FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIEdgeDesktopFixtureSshPublicKeyBody00
+        (Some FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
         (Some
-          ([ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff] [200:db8:1::8] [300:db8:1:7::])))
+          (ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 200:db8:1::8 300:db8:1:7::)))
       []
-      (Some [10.77.0.8/24])
+      (Some 10.77.0.8/24)
       None
       False
       False
@@ -155,19 +155,19 @@
     base-home (TestVm
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some home-lab) [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/vda] Ext4 [])
+          / (/dev/vda Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000]
-        (Some [BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000
+        (Some BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB)
         (Some
-          ([99999999999999999999999999999999999999999999999999999999999999aa] [200:db8:1::9] [300:db8:1:8::])))
+          (99999999999999999999999999999999999999999999999999999999999999aa 200:db8:1::9 300:db8:1:8::)))
       []
-      (Some [10.77.0.9/24])
+      (Some 10.77.0.9/24)
       None
       False
       False
@@ -186,8 +186,8 @@
       None
       None
       {
-        cedar ([AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000]
-          [0123456789ABCDEF0123456789ABCDEF01234567])
+        cedar (AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000
+          0123456789ABCDEF0123456789ABCDEF01234567)
       }
       None
       None)

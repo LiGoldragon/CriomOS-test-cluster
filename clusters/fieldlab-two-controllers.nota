@@ -5,19 +5,19 @@
     atlas (LargeAiRouter
       Max
       Max
-      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None [])
+      (Metal (Some X86_64) 8 (Some fixture-router) None None None None (Some 64) None None [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/disk/by-label/FIELDLAB_ATLAS] Ext4 [])
+          / (/dev/disk/by-label/FIELDLAB_ATLAS Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000]
-        (Some [AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000
+        (Some AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
         (Some
-          ([aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa] [200:db8:1::1] [300:db8:1::])))
+          (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 200:db8:1::1 300:db8:1::)))
       []
-      (Some [10.77.0.1/24])
+      (Some 10.77.0.1/24)
       None
       False
       False
@@ -30,19 +30,19 @@
     beacon (MediaBroadcast
       Medium
       Max
-      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None [])
+      (Metal (Some X86_64) 6 (Some fixture-builder) None None None None (Some 32) None None [])
       (Qwerty
         Uefi
         {
-          [/] ([/dev/disk/by-label/FIELDLAB_BEACON] Ext4 [])
+          / (/dev/disk/by-label/FIELDLAB_BEACON Ext4 [])
         }
         [])
-      ([AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000]
-        (Some [BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000
+        (Some BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB)
         (Some
-          ([bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb] [200:db8:1::2] [300:db8:1:1::])))
+          (bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 200:db8:1::2 300:db8:1:1::)))
       []
-      (Some [10.77.0.2/24])
+      (Some 10.77.0.2/24)
       None
       False
       False
