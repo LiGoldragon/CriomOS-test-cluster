@@ -61,6 +61,9 @@ let
   nixpkgsSource = inputs.nixpkgs.outPath;
   criomosSource = criomos.outPath;
 
+  parentLock = builtins.fromJSON (builtins.readFile "${self}/flake.lock");
+  rootInputNode = name: parentLock.nodes.root.inputs.${name};
+
   # A FIXED nixos label, pinned identically in toplevelFor and the deploy-flake
   # text. Without it the label is derived from nixpkgs's flake revision — which
   # differs between this build (nixpkgs has a rev) and any deploy flake eval
@@ -116,17 +119,24 @@ let
   criomosLibSource = inputs.criomos-lib.outPath;
 
   lockedGithubUrl =
-    owner: repo: flake:
+    nodeName:
     let
+      locked =
+        parentLock.nodes.${nodeName}.locked
+          or (throw "CriomOS-test-cluster deploy flake requires ${nodeName} to be locked");
       revision =
-        flake.rev
-          or (throw "CriomOS-test-cluster deploy flake requires ${repo} to be a locked remote input");
+        locked.rev
+          or (throw "CriomOS-test-cluster deploy flake requires ${nodeName} to have a locked revision");
     in
-    "github:${owner}/${repo}/${revision}";
+    if (locked.type or null) == "github" then
+      "github:${locked.owner}/${locked.repo}/${revision}"
+    else
+      throw "CriomOS-test-cluster deploy flake requires ${nodeName} to be a locked GitHub input";
 
-  nixpkgsUrl = lockedGithubUrl "LiGoldragon" "nixpkgs" inputs.nixpkgs;
-  criomosLibUrl = lockedGithubUrl "LiGoldragon" "CriomOS-lib" inputs.criomos-lib;
-  criomosUrl = lockedGithubUrl "LiGoldragon" "CriomOS" criomos;
+  nixpkgsNode = rootInputNode "nixpkgs";
+  nixpkgsUrl = lockedGithubUrl nixpkgsNode;
+  criomosLibUrl = lockedGithubUrl "criomos-lib";
+  criomosUrl = lockedGithubUrl "criomos";
 
   evalSourcesClosure = pkgs.linkFarm "lojix-deploy-flake-eval-sources" (
     lib.imap0 (index: source: {
@@ -135,26 +145,22 @@ let
     }) evalSources
   );
 
-  deployLock =
-    let
-      parentLock = builtins.fromJSON (builtins.readFile "${self}/flake.lock");
-    in
-    builtins.toFile "lojix-deploy-flake-lock" (
-      builtins.toJSON (
-        parentLock
-        // {
-          nodes = parentLock.nodes // {
-            root = (parentLock.nodes.root or { }) // {
-              inputs = {
-                criomos = "criomos";
-                criomos-lib = "criomos-lib";
-                nixpkgs = "nixpkgs";
-              };
+  deployLock = builtins.toFile "lojix-deploy-flake-lock" (
+    builtins.toJSON (
+      parentLock
+      // {
+        nodes = parentLock.nodes // {
+          root = (parentLock.nodes.root or { }) // {
+            inputs = {
+              criomos = "criomos";
+              criomos-lib = "criomos-lib";
+              nixpkgs = nixpkgsNode;
             };
           };
-        }
-      )
-    );
+        };
+      }
+    )
+  );
 
   # The deploy flake's text. Inputs stay remote refs; the source closure above
   # keeps their source trees present in the builder/deployer stores so offline
@@ -166,6 +172,7 @@ let
       inputs.criomos-lib.url = "${criomosLibUrl}";
       inputs.criomos.url = "${criomosUrl}";
       inputs.criomos.inputs.criomos-lib.follows = "criomos-lib";
+      inputs.criomos.inputs.nixpkgs.follows = "nixpkgs";
       outputs =
         { self, nixpkgs, criomos, criomos-lib }:
         let
@@ -267,7 +274,7 @@ let
   # revision, no-op bootloader). Evaluated on the HOST with substituters ON, so
   # its full closure realises from the cache — this is what mkDeployTest pins
   # into the deployer node store so the daemon's offline `nix build <drv>^*`
-  # finds all its deps. The daemon's own eval (from the path-rewritten lock)
+  # finds all its deps. The daemon's own eval (from the generated lock)
   # produces a drv that shares this closure (only label-metadata-level
   # derivations differ, and those build locally offline in seconds, as the live
   # runs confirm reaching Copy+Activate). The test discovers the daemon's exact

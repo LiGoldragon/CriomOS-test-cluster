@@ -165,10 +165,10 @@ let
   # The deployed system toplevel — re-derived in-process exactly as the deploy
   # flake builds it (its closure is what the daemon's offline `nix build
   # <drv>^*` needs). Depending on it pins that closure into the deployer node
-  # store. The deploy flake source is the `path:<store>` FlakeReference the
-  # daemon evals; its eval (from the path-rewritten, fully-offline lock)
-  # produces the deployed nixos-system, which the test discovers from the
-  # daemon's durable Query state.
+  # store. The deploy flake source carries remote input URLs plus a generated
+  # lock copied from this flake; its offline eval resolves the store-resident
+  # input trees by narHash and produces the deployed nixos-system, which the
+  # test discovers from the daemon's durable Query state.
   deployedToplevel = deployFlake.toplevelFor vmNode;
   deployFlakeSource = deployFlake.sourceFor vmNode;
 
@@ -244,12 +244,12 @@ let
     {
       # The whole offline deploy closure pinned into the deployer's store so the
       # daemon's `nix eval`/`nix build` resolve with NO network: the deploy
-      # flake source (the `path:<store>` FlakeReference the Deploy carries), the
-      # realised deployed system (so `nix build <drv>^*` is a store hit), and
-      # every input source the eval reads by narHash. The Deploy references the
-      # flake by its STORE path directly (not via /etc, whose /etc/static
-      # symlink resolves to an absolute non-store path forbidden in pure flake
-      # eval) — a store path is pure-eval-safe and offline-resolvable.
+      # flake source (a generated store source carried as the Deploy payload),
+      # the realised deployed system (so `nix build <drv>^*` is a store hit),
+      # and every input source the eval reads by narHash. This is not a
+      # workspace checkout override: the generated flake itself uses remote
+      # input URLs plus a copied lock. The remaining store-source payload is the
+      # hermetic test's transport for the synthetic deploy flake.
       system.extraDependencies = [
         deployFlakeSource
         deployedToplevel
@@ -393,178 +393,182 @@ let
     assert lib.assertMsg vmNodeIsPod
       "mkDeployTest: vmNode ${vmNode} is not a Pod-substrate node (machine.species != Pod in its projection); only a Pod node runs as a VM on a host.";
     assert lib.assertMsg vmNodeHostedByHost
-      "mkDeployTest: vmNode ${vmNode} machine.superNode is ${toString (machine.superNode or null)}, not the declared hostNode ${hostNode}; the target is not hosted on this VmHost.";
+      "mkDeployTest: vmNode ${vmNode} machine.superNode is ${
+        toString (machine.superNode or null)
+      }, not the declared hostNode ${hostNode}; the target is not hosted on this VmHost.";
     value;
 in
 
-assertModel (inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
-  name = "lojix-deploy-smoke-${cluster}-${vmNode}";
+assertModel (
+  inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
+    name = "lojix-deploy-smoke-${cluster}-${vmNode}";
 
-  # Both nodes carry the projected horizon as a specialArg exactly as production
-  # nixosSystem receives it; the target IS a real CriomOS node from its
-  # projection (never a hand-stub).
-  node.specialArgs = {
-    inherit constants;
-    horizon = guestHorizon;
-    inputs = inputs // {
-      sops-nix = inputs.criomos.inputs.sops-nix;
-      microvm = inputs.criomos.inputs.microvm;
-      secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
+    # Both nodes carry the projected horizon as a specialArg exactly as production
+    # nixosSystem receives it; the target IS a real CriomOS node from its
+    # projection (never a hand-stub).
+    node.specialArgs = {
+      inherit constants;
+      horizon = guestHorizon;
+      inputs = inputs // {
+        sops-nix = inputs.criomos.inputs.sops-nix;
+        microvm = inputs.criomos.inputs.microvm;
+        secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
+      };
+      deployment = {
+        includeHome = false;
+        includeComplex = false;
+      };
     };
-    deployment = {
-      includeHome = false;
-      includeComplex = false;
-    };
-  };
 
-  nodes.deployer = deployerModule;
-  nodes.${vmNode} = targetModule;
+    nodes.deployer = deployerModule;
+    nodes.${vmNode} = targetModule;
 
-  # The test reads like prose: ONE concept — lojix deploys a full OS and the
-  # target's generation becomes the deployed closure.
-  testScript = ''
-    start_all()
+    # The test reads like prose: ONE concept — lojix deploys a full OS and the
+    # target's generation becomes the deployed closure.
+    testScript = ''
+      start_all()
 
-    # --- the deployer's fixed daemon comes up with both sockets ---------------
-    deployer.wait_for_unit("lojix-daemon.service")
-    deployer.wait_for_file("/run/lojix/ordinary.sock")
-    deployer.wait_for_file("/run/lojix/owner.sock")
-    # both sockets at the production modes (ordinary 0660, owner 0600) — the
-    # real lojix-write-configuration -> rkyv -> daemon path set them.
-    deployer.succeed("test \"$(stat -c %a /run/lojix/ordinary.sock)\" = 660")
-    deployer.succeed("test \"$(stat -c %a /run/lojix/owner.sock)\" = 600")
+      # --- the deployer's fixed daemon comes up with both sockets ---------------
+      deployer.wait_for_unit("lojix-daemon.service")
+      deployer.wait_for_file("/run/lojix/ordinary.sock")
+      deployer.wait_for_file("/run/lojix/owner.sock")
+      # both sockets at the production modes (ordinary 0660, owner 0600) — the
+      # real lojix-write-configuration -> rkyv -> daemon path set them.
+      deployer.succeed("test \"$(stat -c %a /run/lojix/ordinary.sock)\" = 660")
+      deployer.succeed("test \"$(stat -c %a /run/lojix/owner.sock)\" = 600")
 
-    # --- the target boots as a real CriomOS node, sshd up --------------------
-    ${vmNode}.wait_for_unit("sshd.service")
-    # the deployer can reach root@<node>.<cluster>.criome by that exact name
-    # (networking.hosts) with the deploy key (ssh-ng host-key trust pre-seeded).
-    deployer.succeed(
-        "timeout 30s ssh -n -i /etc/lojix-c6/deploy_key "
-        "-o UserKnownHostsFile=/run/lojix/known_hosts "
-        "-o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=10 "
-        "root@${criomeDomainName} true"
-    )
+      # --- the target boots as a real CriomOS node, sshd up --------------------
+      ${vmNode}.wait_for_unit("sshd.service")
+      # the deployer can reach root@<node>.<cluster>.criome by that exact name
+      # (networking.hosts) with the deploy key (ssh-ng host-key trust pre-seeded).
+      deployer.succeed(
+          "timeout 30s ssh -n -i /etc/lojix-c6/deploy_key "
+          "-o UserKnownHostsFile=/run/lojix/known_hosts "
+          "-o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=10 "
+          "root@${criomeDomainName} true"
+      )
 
-    # baseline generation the target booted (the deploy must ADVANCE it).
-    base_system = ${vmNode}.succeed("readlink -f /run/current-system").strip()
+      # baseline generation the target booted (the deploy must ADVANCE it).
+      base_system = ${vmNode}.succeed("readlink -f /run/current-system").strip()
 
-    # --- submit the REAL production deploy over the OWNER socket -------------
-    # FullOs Switch of the TARGET's own projected config; build_attribute =
-    # `systemToplevel` (the deploy flake's output = the target's projected
-    # system, cluster-data-generated). The daemon mints the deployment id and
-    # runs the pipeline autonomously (build -> copy -> activate); the client
-    # returns immediately (S4b decoupling).
-    # `Boot` (not `Switch`): the daemon runs `nix-env --set <closure> &&
-    # switch-to-configuration BOOT`. `boot` sets the system profile generation
-    # (the C6 ground truth) and stages the new config for the NEXT boot WITHOUT
-    # restarting the running system's services — so it does not disrupt the
-    # live network/sshd of the running target mid-activation (which a `switch`
-    # would, on a network-service-heavy CriomOS node in a hermetic VM where
-    # tailscale/yggdrasil block on the unreachable network). Generation-
-    # activation scope: the profile becomes the deployed closure; the running
-    # userspace is not torn down.
-    deploy_reply = deployer.succeed(
-        "LOJIX_OWNER_SOCKET=/run/lojix/owner.sock "
-        "${lojixClis}/bin/meta-lojix "
-        "'(Deploy (System (${cluster} ${vmNode} FullOs /dev/null "
-        "path:${deployFlakeSource} Boot None [] (Some ${deployFlake.buildAttribute}))))'"
-    )
-    print("deploy reply:", deploy_reply)
-    assert "Deployed" in deploy_reply, f"deploy not accepted: {deploy_reply}"
+      # --- submit the REAL production deploy over the OWNER socket -------------
+      # FullOs Switch of the TARGET's own projected config; build_attribute =
+      # `systemToplevel` (the deploy flake's output = the target's projected
+      # system, cluster-data-generated). The daemon mints the deployment id and
+      # runs the pipeline autonomously (build -> copy -> activate); the client
+      # returns immediately (S4b decoupling).
+      # `Boot` (not `Switch`): the daemon runs `nix-env --set <closure> &&
+      # switch-to-configuration BOOT`. `boot` sets the system profile generation
+      # (the C6 ground truth) and stages the new config for the NEXT boot WITHOUT
+      # restarting the running system's services — so it does not disrupt the
+      # live network/sshd of the running target mid-activation (which a `switch`
+      # would, on a network-service-heavy CriomOS node in a hermetic VM where
+      # tailscale/yggdrasil block on the unreachable network). Generation-
+      # activation scope: the profile becomes the deployed closure; the running
+      # userspace is not torn down.
+      deploy_reply = deployer.succeed(
+          "LOJIX_OWNER_SOCKET=/run/lojix/owner.sock "
+          "${lojixClis}/bin/meta-lojix "
+          "'(Deploy (System (${cluster} ${vmNode} FullOs /dev/null "
+          "path:${deployFlakeSource} Boot None [] (Some ${deployFlake.buildAttribute}))))'"
+      )
+      print("deploy reply:", deploy_reply)
+      assert "Deployed" in deploy_reply, f"deploy not accepted: {deploy_reply}"
 
-    # read the daemon's durable deploy state via the ORDINARY CLI (Query ByNode)
-    # — used for observability of the silent deploy (the generation-activation
-    # ground truth is asserted on the target itself).
-    def query_node():
-        return deployer.succeed(
-            "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-            "${lojixClis}/bin/lojix "
-            "'(Query (ByNode (${cluster} ${vmNode} None)))'"
-        )
+      # read the daemon's durable deploy state via the ORDINARY CLI (Query ByNode)
+      # — used for observability of the silent deploy (the generation-activation
+      # ground truth is asserted on the target itself).
+      def query_node():
+          return deployer.succeed(
+              "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
+              "${lojixClis}/bin/lojix "
+              "'(Query (ByNode (${cluster} ${vmNode} None)))'"
+          )
 
-    # The EXACT closure the daemon evals+builds — the deploy flake's
-    # systemToplevel, re-derived in-process (deployFlake.toplevelFor) and proven
-    # byte-identical to the daemon's eval. This is the activated-generation
-    # ground truth: the deploy is deterministic, so the target's system profile
-    # MUST become exactly this path.
-    expected_closure = "${deployedToplevel}"
-    print("expected deployed closure:", expected_closure)
-    # the <drv>^* fix: the expected artifact is a realised nixos-system dir,
-    # NEVER a bare .drv.
-    assert not expected_closure.endswith(".drv"), expected_closure
-    assert "nixos-system-${vmNode}" in expected_closure, expected_closure
+      # The EXACT closure the daemon evals+builds — the deploy flake's
+      # systemToplevel, re-derived in-process (deployFlake.toplevelFor) and proven
+      # byte-identical to the daemon's eval. This is the activated-generation
+      # ground truth: the deploy is deterministic, so the target's system profile
+      # MUST become exactly this path.
+      expected_closure = "${deployedToplevel}"
+      print("expected deployed closure:", expected_closure)
+      # the <drv>^* fix: the expected artifact is a realised nixos-system dir,
+      # NEVER a bare .drv.
+      assert not expected_closure.endswith(".drv"), expected_closure
+      assert "nixos-system-${vmNode}" in expected_closure, expected_closure
 
-    # The daemon is SILENT during the deploy (no logs); it owns the
-    # build->copy->activate pipeline after AcceptedDeploy. The ground truth of
-    # the microvm-scoped GENERATION-ACTIVATION is the TARGET's own system profile
-    # link — poll it directly until it becomes the deployed closure (the daemon's
-    # `nix-env --set` on the target). This is the report-46/48 approach: observe
-    # the deploy's durable effect rather than the silent daemon.
-    ${vmNode}.wait_until_succeeds(
-        f"test \"$(readlink -f /nix/var/nix/profiles/system)\" = {expected_closure}",
-        timeout=600,
-    )
+      # The daemon is SILENT during the deploy (no logs); it owns the
+      # build->copy->activate pipeline after AcceptedDeploy. The ground truth of
+      # the microvm-scoped GENERATION-ACTIVATION is the TARGET's own system profile
+      # link — poll it directly until it becomes the deployed closure (the daemon's
+      # `nix-env --set` on the target). This is the report-46/48 approach: observe
+      # the deploy's durable effect rather than the silent daemon.
+      ${vmNode}.wait_until_succeeds(
+          f"test \"$(readlink -f /nix/var/nix/profiles/system)\" = {expected_closure}",
+          timeout=600,
+      )
 
-    # --- ASSERT: the target's system profile generation IS the lojix-deployed
-    # closure (the microvm-scoped generation-activation: /nix/var/nix/profiles/
-    # system -> the deployed nixos-system) ------------------------------------
-    profile_target = ${vmNode}.succeed("readlink -f /nix/var/nix/profiles/system").strip()
-    assert profile_target == expected_closure, (
-        f"system profile {profile_target} is not the deployed closure {expected_closure}"
-    )
-    # it ADVANCED past the booted base (a real deploy, not a no-op).
-    assert profile_target != base_system, "generation did not advance past the base"
+      # --- ASSERT: the target's system profile generation IS the lojix-deployed
+      # closure (the microvm-scoped generation-activation: /nix/var/nix/profiles/
+      # system -> the deployed nixos-system) ------------------------------------
+      profile_target = ${vmNode}.succeed("readlink -f /nix/var/nix/profiles/system").strip()
+      assert profile_target == expected_closure, (
+          f"system profile {profile_target} is not the deployed closure {expected_closure}"
+      )
+      # it ADVANCED past the booted base (a real deploy, not a no-op).
+      assert profile_target != base_system, "generation did not advance past the base"
 
-    # --- ASSERT: the daemon's DURABLE deploy-job record corroborates (Spirit
-    # [vcin]: a print is not proof — assert the real durable record) -----------
-    # The ordinary `(Query (ByNode ...))` reply renders the schema-owned
-    # GenerationListing:
-    #   (Queried ([ (Generation <genId> <depId> <cluster> <node>
-    #                <kind> <activationKind> <slot> <closurePath>) ... ]
-    #             (DatabaseMarker <seq> <digest>)))
-    # The daemon is silent and the live-set write commits after the target's
-    # profile flip, so poll the durable Query until the node's record carries the
-    # deployed closure, then assert the three load-bearing facts: the node name,
-    # the terminal generation SLOT, and the deployed ClosurePath (the SAME
-    # closure the profile assertion checked). The durable record for this deploy
-    # is `(<gen> <dep> ${cluster} ${vmNode} FullOs Boot Current <closure>)` —
-    # the live generation lands in the `Current` slot (the terminal deployed
-    # state the query exposes), so `Current` is the durable state this proves.
-    expected_slot = "Current"
-    deployer.wait_until_succeeds(
-        "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-        f"${lojixClis}/bin/lojix '(Query (ByNode (${cluster} ${vmNode} None)))' "
-        f"| grep -F {expected_closure}",
-        timeout=600,
-    )
-    final_query = query_node()
-    print("durable deploy state:", final_query)
-    # Assert the schema-owned positional Generation fragment — node + kind +
-    # activationKind + terminal slot together (`${vmNode} FullOs Boot Current`),
-    # not a loose lone-`Current` substring that could match elsewhere. This ties
-    # the deployed node to its terminal generation slot in one schema shape.
-    node_generation = "${vmNode} FullOs Boot " + expected_slot
-    assert node_generation in final_query, (
-        f"durable Query reply does not record {node_generation!r}: {final_query}"
-    )
-    # and the deployed ClosurePath in that same record equals the SAME closure
-    # the profile assertion verified — durable record and on-target generation
-    # agree.
-    assert expected_closure in final_query, (
-        f"durable Query reply does not record the deployed closure {expected_closure}: {final_query}"
-    )
+      # --- ASSERT: the daemon's DURABLE deploy-job record corroborates (Spirit
+      # [vcin]: a print is not proof — assert the real durable record) -----------
+      # The ordinary `(Query (ByNode ...))` reply renders the schema-owned
+      # GenerationListing:
+      #   (Queried ([ (Generation <genId> <depId> <cluster> <node>
+      #                <kind> <activationKind> <slot> <closurePath>) ... ]
+      #             (DatabaseMarker <seq> <digest>)))
+      # The daemon is silent and the live-set write commits after the target's
+      # profile flip, so poll the durable Query until the node's record carries the
+      # deployed closure, then assert the three load-bearing facts: the node name,
+      # the terminal generation SLOT, and the deployed ClosurePath (the SAME
+      # closure the profile assertion checked). The durable record for this deploy
+      # is `(<gen> <dep> ${cluster} ${vmNode} FullOs Boot Current <closure>)` —
+      # the live generation lands in the `Current` slot (the terminal deployed
+      # state the query exposes), so `Current` is the durable state this proves.
+      expected_slot = "Current"
+      deployer.wait_until_succeeds(
+          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
+          f"${lojixClis}/bin/lojix '(Query (ByNode (${cluster} ${vmNode} None)))' "
+          f"| grep -F {expected_closure}",
+          timeout=600,
+      )
+      final_query = query_node()
+      print("durable deploy state:", final_query)
+      # Assert the schema-owned positional Generation fragment — node + kind +
+      # activationKind + terminal slot together (`${vmNode} FullOs Boot Current`),
+      # not a loose lone-`Current` substring that could match elsewhere. This ties
+      # the deployed node to its terminal generation slot in one schema shape.
+      node_generation = "${vmNode} FullOs Boot " + expected_slot
+      assert node_generation in final_query, (
+          f"durable Query reply does not record {node_generation!r}: {final_query}"
+      )
+      # and the deployed ClosurePath in that same record equals the SAME closure
+      # the profile assertion verified — durable record and on-target generation
+      # agree.
+      assert expected_closure in final_query, (
+          f"durable Query reply does not record the deployed closure {expected_closure}: {final_query}"
+      )
 
-    # --- ASSERT: the activated artifact is a REAL nixos-system (the <drv>^* fix
-    # held) — a .drv would have NONE of this tree -----------------------------
-    ${vmNode}.succeed(f"test -d {expected_closure}")
-    ${vmNode}.succeed(f"test -x {expected_closure}/bin/switch-to-configuration")
-    ${vmNode}.succeed(f"test -e {expected_closure}/init")
-    ${vmNode}.succeed(f"test -e {expected_closure}/activate")
-    # it is genuinely the deployed closure in the target's store (the daemon's
-    # nix copy --to ssh-ng landed it there node-to-node).
-    ${vmNode}.succeed(f"nix-store --query --deriver {expected_closure}")
+      # --- ASSERT: the activated artifact is a REAL nixos-system (the <drv>^* fix
+      # held) — a .drv would have NONE of this tree -----------------------------
+      ${vmNode}.succeed(f"test -d {expected_closure}")
+      ${vmNode}.succeed(f"test -x {expected_closure}/bin/switch-to-configuration")
+      ${vmNode}.succeed(f"test -e {expected_closure}/init")
+      ${vmNode}.succeed(f"test -e {expected_closure}/activate")
+      # it is genuinely the deployed closure in the target's store (the daemon's
+      # nix copy --to ssh-ng landed it there node-to-node).
+      ${vmNode}.succeed(f"nix-store --query --deriver {expected_closure}")
 
-    print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
-          "the target's system profile generation is the deployed closure.")
-  '';
-})
+      print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
+            "the target's system profile generation is the deployed closure.")
+    '';
+  }
+)
