@@ -5,7 +5,7 @@
     atlas (LargeAiRouter
       Max
       Max
-      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None)
+      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None [])
       (Qwerty
         Uefi
         {
@@ -30,7 +30,7 @@
     beacon (MediaBroadcast
       Medium
       Max
-      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None)
+      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None [])
       (Qwerty
         Uefi
         {
@@ -55,7 +55,7 @@
     cedar (Edge
       Medium
       Max
-      (Metal (Some X86_64) 4 (Some [ThinkPadT14Gen2Intel]) None None None (Some 12) (Some 16) None None)
+      (Metal (Some X86_64) 4 (Some [ThinkPadT14Gen2Intel]) None None None (Some 12) (Some 16) None None [])
       (Colemak
         Uefi
         {
@@ -80,7 +80,7 @@
     dune (Edge
       Min
       Max
-      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) (Some 40) None)
+      (Pod (Some X86_64) 2 (Some [fixture-pod]) None (Some atlas) (Some aria) None (Some 4) (Some 40) None [])
       (Qwerty
         Uefi
         {
@@ -105,7 +105,7 @@
     mercury (TestVm
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
       (Qwerty
         Uefi
         {
@@ -130,7 +130,7 @@
     edge-desktop (Edge
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
       (Qwerty
         Uefi
         {
@@ -155,7 +155,7 @@
     base-home (TestVm
       Min
       Max
-      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]))
+      (Pod (Some X86_64) 4 None None (Some atlas) (Some aria) None (Some 8) (Some 40) (Some [home-lab]) [])
       (Qwerty
         Uefi
         {

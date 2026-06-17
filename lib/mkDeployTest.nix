@@ -372,7 +372,7 @@ let
           mkdir -p "$XDG_CACHE_HOME"
           nix flake archive --offline "path:${deployFlakeSource}" >/dev/null 2>&1 || true
           ${lojixClis}/bin/lojix-write-configuration \
-            "(ConfigurationWriteRequest (/run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /run/lojix/startup.rkyv))"
+            "(ConfigurationWriteRequest (/run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix (${clusterName} ${hostNode} Hermetic github:LiGoldragon/CriomOS-test-cluster /dev/null) /run/lojix/startup.rkyv))"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -411,7 +411,10 @@ assertModel (inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
       microvm = inputs.criomos.inputs.microvm;
       secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
     };
-    deployment.includeHome = false;
+    deployment = {
+      includeHome = false;
+      includeComplex = false;
+    };
   };
 
   nodes.deployer = deployerModule;
@@ -436,9 +439,9 @@ assertModel (inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
     # the deployer can reach root@<node>.<cluster>.criome by that exact name
     # (networking.hosts) with the deploy key (ssh-ng host-key trust pre-seeded).
     deployer.succeed(
-        "ssh -i /etc/lojix-c6/deploy_key "
+        "timeout 30s ssh -n -i /etc/lojix-c6/deploy_key "
         "-o UserKnownHostsFile=/run/lojix/known_hosts "
-        "-o StrictHostKeyChecking=accept-new -o BatchMode=yes "
+        "-o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=10 "
         "root@${criomeDomainName} true"
     )
 

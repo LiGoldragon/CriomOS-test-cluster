@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:LiGoldragon/nixpkgs?ref=main";
 
-    criomos.url = "github:LiGoldragon/CriomOS/horizon-test-vm";
+    criomos.url = "github:LiGoldragon/CriomOS/main";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
 
@@ -15,7 +15,7 @@
     criomos-home.follows = "criomos/criomos-home";
     home-manager.follows = "criomos/home-manager";
 
-    horizon.url = "github:LiGoldragon/horizon-rs/horizon-test-vm";
+    horizon.url = "github:LiGoldragon/horizon-rs/main";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
     # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*

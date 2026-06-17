@@ -145,7 +145,10 @@ let
               specialArgs = {
                 constants = criomos-lib.lib.constants;
                 horizon = builtins.fromJSON (builtins.readFile (self + "/${vmNode}.json"));
-                deployment.includeHome = false;
+                deployment = {
+                  includeHome = false;
+                  includeComplex = false;
+                };
                 inputs = criomos.inputs // {
                   inherit criomos;
                   sops-nix = criomos.inputs.sops-nix;
@@ -247,7 +250,10 @@ let
       specialArgs = {
         constants = inputs.criomos-lib.lib.constants;
         inherit horizon;
-        deployment.includeHome = false;
+        deployment = {
+          includeHome = false;
+          includeComplex = false;
+        };
         inputs = criomos.inputs // {
           inherit criomos;
           sops-nix = criomos.inputs.sops-nix;

@@ -5,7 +5,7 @@
     atlas (LargeAiRouter
       Max
       Max
-      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64))
+      (Metal (Some X86_64) 8 (Some [fixture-router]) None None None None (Some 64) None None [])
       (Qwerty
         Uefi
         {
@@ -24,13 +24,13 @@
       []
       False
       False
-      (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords))))
+      (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords)) None))
       (Some True)
       [(TailnetClient) (TailnetController) (NixBuilder (Some 8))])
     beacon (MediaBroadcast
       Medium
       Max
-      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32))
+      (Metal (Some X86_64) 6 (Some [fixture-builder]) None None None None (Some 32) None None [])
       (Qwerty
         Uefi
         {

@@ -371,6 +371,7 @@ assertModel (
       # test simply "a node whose role keeps home", with zero per-test authoring.
       deployment = {
         includeHome = includeHomeResolved;
+        includeComplex = false;
       };
     };
 

@@ -38,7 +38,8 @@
       "chipGen": null,
       "ramGb": 8,
       "diskGb": 40,
-      "location": "home-lab"
+      "location": "home-lab",
+      "superNodes": []
     },
     "linkLocalIps": [],
     "nodeIp": "10.77.0.9/24",
@@ -192,6 +193,9 @@
     "adminSshPubKeys": [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAriaFixtureSshPublicKeyBody0000000000"
     ],
+    "imageExchangePubKeys": [
+      "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    ],
     "wireguardUntrustedProxies": []
   },
   "exNodes": {
@@ -221,7 +225,8 @@
         "chipGen": null,
         "ramGb": 64,
         "diskGb": null,
-        "location": null
+        "location": null,
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.1/24",
@@ -347,7 +352,8 @@
         "chipGen": null,
         "ramGb": 32,
         "diskGb": null,
-        "location": null
+        "location": null,
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.2/24",
@@ -450,7 +456,8 @@
         "chipGen": 12,
         "ramGb": 16,
         "diskGb": null,
-        "location": null
+        "location": null,
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.3/24",
@@ -553,7 +560,8 @@
         "chipGen": null,
         "ramGb": 4,
         "diskGb": 40,
-        "location": null
+        "location": null,
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.4/24",
@@ -651,7 +659,8 @@
         "chipGen": null,
         "ramGb": 8,
         "diskGb": 40,
-        "location": "home-lab"
+        "location": "home-lab",
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.8/24",
@@ -749,7 +758,8 @@
         "chipGen": null,
         "ramGb": 8,
         "diskGb": 40,
-        "location": "home-lab"
+        "location": "home-lab",
+        "superNodes": []
       },
       "linkLocalIps": [],
       "nodeIp": "10.77.0.7/24",
