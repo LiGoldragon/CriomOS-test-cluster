@@ -665,11 +665,11 @@
         "system": "system"
       },
       "locked": {
-        "lastModified": 1781684906,
-        "narHash": "sha256-61YKQA3TxdM0rrlpoT1S7iVuJDd7NFxxu3dSRRb8C4g=",
+        "lastModified": 1781692707,
+        "narHash": "sha256-Omwx6vRVusuYzhARTkcDmgSrpbyZUEVA4mYjh+FwhCg=",
         "owner": "LiGoldragon",
         "repo": "CriomOS",
-        "rev": "fd2e6ace0e7207db8c8b59babdb41b49ebd795e6",
+        "rev": "c33934e33ab77506c7b3264d12280758f8461fc5",
         "type": "github"
       },
       "original": {
