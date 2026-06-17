@@ -20,17 +20,19 @@
 #      live e2e, real `nixos-system-<node>`, not a hand-written stub.
 #
 #   2. A flake eval is PURE: it cannot `import` a prebuilt .drv or use
-#      `builtins.storePath`. So the toplevel is RE-DERIVED here from path-pinned
-#      inputs. Nix resolves every locked input from STORE RESIDENCE by narHash
-#      (verified: empty eval cache + empty flake-registry + --offline still
-#      resolves), so as long as the deployer node's store holds the input source
-#      trees (mkDeployTest pins them as a node store dependency) the eval is
-#      fully offline. The re-derived drv is byte-identical to the one this very
-#      build realises, so `nix build <drv>^*` is an instant offline store hit.
+#      `builtins.storePath`. So the toplevel is RE-DERIVED here from
+#      remote-pinned inputs whose source trees are also retained in the
+#      deployer node's store. Nix resolves every locked input from STORE
+#      RESIDENCE by narHash (verified: empty eval cache + empty flake-registry
+#      + --offline still resolves), so as long as the deployer node's store
+#      holds the input source trees (mkDeployTest pins them as a node store
+#      dependency) the eval is fully offline. The re-derived drv is
+#      byte-identical to the one this very build realises, so
+#      `nix build <drv>^*` is an instant offline store hit.
 #
 # WHAT IT RETURNS:
 #   { source;       # the locked deploy-flake SOURCE dir in the store — the
-#                   #   `path:` FlakeReference the daemon evals
+#                   #   flake reference the daemon evals
 #     buildAttribute;# "systemToplevel" — the build_attribute the Deploy carries
 #     toplevel;     # the realised deployed system (a real nixos-system-<node>),
 #                   #   so mkDeployTest can pin its build closure into the node
@@ -40,12 +42,11 @@
 #                   #   criomos.inputs.*), so the node can depend on them
 #   }
 #
-# THE LOCK IS PRE-GENERATED, NOT HAND-WRITTEN. We feed `nix flake lock` a
-# deploy flake whose two inputs are the criomos + nixpkgs SOURCE store paths via
-# `path:` URLs; the lock it produces pins criomos's whole transitive tree by
-# narHash. We do this in pure Nix via a normal derivation that locks against the
-# inputs threaded in as explicit build dependencies (no IFD-impurity, no
-# __noChroot, no network — the inputs are already store-resident).
+# THE LOCK IS PRE-GENERATED, NOT HAND-WRITTEN. The deploy flake carries exact
+# remote GitHub revisions while the same source trees are threaded in as
+# explicit build dependencies. Its lock is cut from this repo's already-pinned
+# flake.lock, keeping the remote nodes and narHashes without running
+# `nix flake lock` inside the offline builder.
 
 {
   inputs,
@@ -62,8 +63,8 @@ let
 
   # A FIXED nixos label, pinned identically in toplevelFor and the deploy-flake
   # text. Without it the label is derived from nixpkgs's flake revision — which
-  # differs between this build (nixpkgs has a rev) and the deploy flake's eval
-  # (nixpkgs threaded as a `path:` input has none -> a `.dirty` label), making
+  # differs between this build (nixpkgs has a rev) and any deploy flake eval
+  # whose nixpkgs input has no revision metadata (a `.dirty` label), making
   # the two drvs diverge. Pinning it makes the re-derived deployed system
   # byte-identical to the closure this build realises, so the daemon's
   # `nix build <drv>^*` is an instant offline store hit on the pinned closure.
@@ -114,17 +115,56 @@ let
 
   criomosLibSource = inputs.criomos-lib.outPath;
 
-  # The deploy flake's text. `path:` inputs -> a simple lock. criomos-lib is a
-  # top-level path input that criomos FOLLOWS, so the lock pins criomos's
-  # criomos-lib as a `path` node matching this same store path (the narHash the
-  # inputTreeMap carries) — otherwise criomos's lock would pin its OWN
-  # github-fetched criomos-lib, leaving one unmapped github node that the
-  # rewriter cannot path-convert and the offline eval would try to fetch.
+  lockedGithubUrl =
+    owner: repo: flake:
+    let
+      revision =
+        flake.rev
+          or (throw "CriomOS-test-cluster deploy flake requires ${repo} to be a locked remote input");
+    in
+    "github:${owner}/${repo}/${revision}";
+
+  nixpkgsUrl = lockedGithubUrl "LiGoldragon" "nixpkgs" inputs.nixpkgs;
+  criomosLibUrl = lockedGithubUrl "LiGoldragon" "CriomOS-lib" inputs.criomos-lib;
+  criomosUrl = lockedGithubUrl "LiGoldragon" "CriomOS" criomos;
+
+  evalSourcesClosure = pkgs.linkFarm "lojix-deploy-flake-eval-sources" (
+    lib.imap0 (index: source: {
+      name = "source-${toString index}";
+      path = source;
+    }) evalSources
+  );
+
+  deployLock =
+    let
+      parentLock = builtins.fromJSON (builtins.readFile "${self}/flake.lock");
+    in
+    builtins.toFile "lojix-deploy-flake-lock" (
+      builtins.toJSON (
+        parentLock
+        // {
+          nodes = parentLock.nodes // {
+            root = (parentLock.nodes.root or { }) // {
+              inputs = {
+                criomos = "criomos";
+                criomos-lib = "criomos-lib";
+                nixpkgs = "nixpkgs";
+              };
+            };
+          };
+        }
+      )
+    );
+
+  # The deploy flake's text. Inputs stay remote refs; the source closure above
+  # keeps their source trees present in the builder/deployer stores so offline
+  # lock/eval resolves by narHash. criomos-lib is top-level and criomos FOLLOWS
+  # it, so both roots use the same locked remote revision.
   deployFlakeText = vmNode: ''
     {
-      inputs.nixpkgs.url = "path:${nixpkgsSource}";
-      inputs.criomos-lib.url = "path:${criomosLibSource}";
-      inputs.criomos.url = "path:${criomosSource}";
+      inputs.nixpkgs.url = "${nixpkgsUrl}";
+      inputs.criomos-lib.url = "${criomosLibUrl}";
+      inputs.criomos.url = "${criomosUrl}";
       inputs.criomos.inputs.criomos-lib.follows = "criomos-lib";
       outputs =
         { self, nixpkgs, criomos, criomos-lib }:
@@ -192,22 +232,18 @@ let
     }
   '';
 
-  # Build the LOCKED deploy-flake source dir. The `path:` roots are
-  # store-resident, so `nix flake lock --offline` resolves the whole tree with
-  # no network, pinning criomos's transitive inputs (github-pinned, which is
-  # fine: the daemon's node nix config makes `--refresh` re-use the
-  # store-resident copies by narHash rather than re-fetching).
+  # Build the LOCKED deploy-flake source dir. The root inputs are exact remote
+  # refs and their source trees are store-resident; the generated lock carries
+  # the narHashes from this flake's lock, so the builder performs no networked
+  # lock update.
   sourceFor =
     vmNode:
     pkgs.runCommand "lojix-deploy-flake-${vmNode}"
       {
-        nativeBuildInputs = [
-          pkgs.nix
-          pkgs.git
-        ];
         passAsFile = [ "flakeText" ];
         flakeText = deployFlakeText vmNode;
-        inherit nixpkgsSource criomosSource;
+        flakeLock = deployLock;
+        inherit nixpkgsSource criomosSource evalSourcesClosure;
         projection = "${self}/fixtures/horizon/${vmNode}.json";
         secret = "${self}/fixtures/secrets/routerWifiSaePasswords";
         NIX_CONFIG = ''
@@ -220,11 +256,10 @@ let
         export HOME="$TMPDIR"
         mkdir -p "$out"
         cp "$flakeTextPath" "$out/flake.nix"
+        cp "$flakeLock" "$out/flake.lock"
         cp "$projection" "$out/${vmNode}.json"
         cp "$secret" "$out/routerWifiSaePasswords"
-        cd "$out"
-        nix flake lock --offline
-        test -f flake.lock
+        test -f "$out/flake.lock"
       '';
 
   # The deployed system, RE-DERIVED in-process exactly as the deploy-flake text
