@@ -118,25 +118,23 @@ let
 
   criomosLibSource = inputs.criomos-lib.outPath;
 
-  lockedGithubUrl =
+  originalGithubUrl =
     nodeName:
     let
-      locked =
-        parentLock.nodes.${nodeName}.locked
-          or (throw "CriomOS-test-cluster deploy flake requires ${nodeName} to be locked");
-      revision =
-        locked.rev
-          or (throw "CriomOS-test-cluster deploy flake requires ${nodeName} to have a locked revision");
+      original =
+        parentLock.nodes.${nodeName}.original
+          or (throw "CriomOS-test-cluster deploy flake requires ${nodeName} to have an original input");
+      referenceSuffix = lib.optionalString (original ? ref) "?ref=${original.ref}";
     in
-    if (locked.type or null) == "github" then
-      "github:${locked.owner}/${locked.repo}/${revision}"
+    if (original.type or null) == "github" then
+      "github:${original.owner}/${original.repo}${referenceSuffix}"
     else
-      throw "CriomOS-test-cluster deploy flake requires ${nodeName} to be a locked GitHub input";
+      throw "CriomOS-test-cluster deploy flake requires ${nodeName} to be an original GitHub input";
 
   nixpkgsNode = rootInputNode "nixpkgs";
-  nixpkgsUrl = lockedGithubUrl nixpkgsNode;
-  criomosLibUrl = lockedGithubUrl "criomos-lib";
-  criomosUrl = lockedGithubUrl "criomos";
+  nixpkgsUrl = originalGithubUrl nixpkgsNode;
+  criomosLibUrl = originalGithubUrl "criomos-lib";
+  criomosUrl = originalGithubUrl "criomos";
 
   evalSourcesClosure = pkgs.linkFarm "lojix-deploy-flake-eval-sources" (
     lib.imap0 (index: source: {
