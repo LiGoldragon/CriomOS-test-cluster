@@ -707,16 +707,16 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1781944990,
-        "narHash": "sha256-bNQlghDlPE9vcAW8jmYwgLTwc1066Myi8AZDruoDCgo=",
+        "lastModified": 1781945844,
+        "narHash": "sha256-aG9zLoPlD7k42RpewMKSo426+vkeW3fD7mmsp7itA50=",
         "owner": "LiGoldragon",
         "repo": "criome",
-        "rev": "c8e19a2bc7b5f546aa5f596c7ec43663bc8e420d",
+        "rev": "1eaa78306ac23b63176e0ad5d75001ab617615e5",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-cluster-witness",
+        "ref": "main",
         "repo": "criome",
         "type": "github"
       }

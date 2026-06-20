@@ -71,6 +71,6 @@ pkgs.testers.runNixOSTest {
     ${machineName}.wait_for_file("${socketPath}")
     # The witness mints real BLS material, seeds the daemon over the socket, and
     # asserts authorized -> Authorized and threshold-short -> not Authorized.
-    ${machineName}.succeed("CRIOME_SOCKET=${socketPath} ${criomePackage}/bin/criome-cluster-witness")
+    ${machineName}.succeed("CRIOME_SOCKET=${socketPath} ${criomePackage}/bin/criome-cluster-witness-test")
   '';
 }
