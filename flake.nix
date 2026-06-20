@@ -30,6 +30,18 @@
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
 
+    # The criome auth component, the current spirit intent daemon (where the
+    # fail-closed 1-of-1 criome gate lives, commit 90875f2), and the working
+    # signal contract between them — the inputs the criome-gated propagation
+    # loop test consumes (mkCriomeClusterTest, designer report 704). These are
+    # self-contained release artifacts with their own crane/fenix toolchains;
+    # we do NOT follow our nixpkgs onto them, same rationale as lojix above.
+    # persona-spirit stays as-is for the v0.1.0->current upgrade test; the gate
+    # under test lives in `spirit`, a distinct repo from persona-spirit.
+    spirit.url = "github:LiGoldragon/spirit/main";
+    criome.url = "github:LiGoldragon/criome/main";
+    signal-criome.url = "github:LiGoldragon/signal-criome/main";
+
     upgrade.url = "github:LiGoldragon/upgrade";
   };
 
