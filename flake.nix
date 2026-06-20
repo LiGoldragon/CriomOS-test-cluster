@@ -42,7 +42,11 @@
     # criome main already carries the `cluster-witness` package (operator commit
     # 1eaa783, report 704 Stage A): criome-daemon + criome-cluster-witness-test
     # + criome-write-configuration. The test consumes that package directly.
-    criome.url = "github:LiGoldragon/criome/main";
+    # Feature-arc branch: criome main's cluster-witness package PLUS the
+    # auto-approve verdict mode + meta Configure impl + criome-auto-approve-
+    # witness-test (report 704, Spirit t00s/da5i). Operator repoints to main once
+    # the runtime lands there. Consumes signal-criome/meta-signal-criome main.
+    criome.url = "github:LiGoldragon/criome/criome-auto-approve";
     signal-criome.url = "github:LiGoldragon/signal-criome/main";
 
     upgrade.url = "github:LiGoldragon/upgrade";
@@ -331,6 +335,21 @@
             }) {
               cluster = "fieldlab";
               members = [ "alpha" ];
+            };
+
+            # The auto-approve + meta-Configure proof (report 704, Spirit
+            # t00s/da5i): the daemon boots in default Quorum; the witness
+            # reconfigures it to AutoApprove over the META socket (Configure ->
+            # Configured), then an evidence-less evaluation over the working
+            # socket returns Authorized. Exercises the meta socket, runtime
+            # reconfiguration, and the auto-approve verdict mode together.
+            criome-cluster-auto-approve = (import ./lib/mkCriomeClusterTest.nix {
+              inherit inputs pkgs system;
+            }) {
+              name = "criome-cluster-auto-approve";
+              cluster = "fieldlab";
+              members = [ "alpha" ];
+              witness = "criome-auto-approve-witness-test";
             };
           }
         )

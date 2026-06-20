@@ -20,8 +20,13 @@
   system,
 }:
 {
+  name ? "criome-cluster-1of1",
   cluster ? "fieldlab",
   members ? [ "alpha" ],
+  # The witness binary run against the booted daemon: the 1-of-1 quorum witness
+  # by default, or criome-auto-approve-witness-test for the auto-approve +
+  # meta-Configure proof.
+  witness ? "criome-cluster-witness-test",
 }:
 let
   criomePackage = inputs.criome.packages.${system}.cluster-witness;
@@ -61,7 +66,7 @@ let
     };
 in
 pkgs.testers.runNixOSTest {
-  name = "criome-cluster-1of1";
+  inherit name;
 
   nodes.${member} = criomeNode;
 
@@ -69,8 +74,11 @@ pkgs.testers.runNixOSTest {
     start_all()
     ${machineName}.wait_for_unit("criome.service")
     ${machineName}.wait_for_file("${socketPath}")
-    # The witness mints real BLS material, seeds the daemon over the socket, and
-    # asserts authorized -> Authorized and threshold-short -> not Authorized.
-    ${machineName}.succeed("CRIOME_SOCKET=${socketPath} ${criomePackage}/bin/criome-cluster-witness-test")
+    ${machineName}.wait_for_file("${socketPath}.meta")
+    # The witness runs against the booted daemon over real sockets: the 1-of-1
+    # quorum proof (authorized accepted, threshold-short rejected), or the
+    # auto-approve proof (meta Configure(AutoApprove) -> Configured, then an
+    # evidence-less evaluation -> Authorized).
+    ${machineName}.succeed("CRIOME_SOCKET=${socketPath} ${criomePackage}/bin/${witness}")
   '';
 }
