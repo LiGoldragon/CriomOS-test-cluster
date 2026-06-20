@@ -312,6 +312,23 @@
               hostNode = "atlas";
               vmNode = "mercury";
             };
+
+            # ================================================================
+            # The criome-cluster 1-of-1 authorization test (designer report
+            # 704, Stage A). A real NixOS guest runs the real `criome-daemon`
+            # as a systemd service; the `criome-cluster-witness` mints real BLS
+            # material, seeds the daemon over its socket, and proves the gate
+            # accepts an authorized head and rejects a threshold-short one. The
+            # criome half of the spirit gate, proven in a real sandbox. The
+            # spirit-daemon driving the gate + cross-guest mirror fan-out are
+            # Stage B, once spirit's gate-config arming lands.
+            # ================================================================
+            criome-cluster-1of1 = (import ./lib/mkCriomeClusterTest.nix {
+              inherit inputs pkgs system;
+            }) {
+              cluster = "fieldlab";
+              members = [ "alpha" ];
+            };
           }
         )
       );
