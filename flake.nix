@@ -39,7 +39,10 @@
     # persona-spirit stays as-is for the v0.1.0->current upgrade test; the gate
     # under test lives in `spirit`, a distinct repo from persona-spirit.
     spirit.url = "github:LiGoldragon/spirit/main";
-    criome.url = "github:LiGoldragon/criome/main";
+    # Pinned to the criome-cluster-witness feature branch for this arc (report
+    # 704 Stage A): it carries the cluster-witness package the test consumes.
+    # Operator repoints this to criome main once the witness bins land there.
+    criome.url = "github:LiGoldragon/criome/criome-cluster-witness";
     signal-criome.url = "github:LiGoldragon/signal-criome/main";
 
     upgrade.url = "github:LiGoldragon/upgrade";
