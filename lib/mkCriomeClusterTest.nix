@@ -14,6 +14,12 @@
 # The daemon follows the proven CriomOS `mirror.nix` shape: an `ExecStartPre`
 # encodes the typed configuration into the single rkyv startup argument the
 # daemon consumes; the daemon never parses text.
+#
+# SCOPE (honest): this minimal guest runs criome as ROOT. It proves the gate
+# verdict logic + the meta socket in a real VM — NOT criome's per-Unix-user
+# isolation (that needs a dedicated non-root service user + an assertion that a
+# different unprivileged user is denied the socket) and NOT the full CriomOS
+# test-substrate. Those are follow-ons (audit 704-4 B7).
 {
   inputs,
   pkgs,
@@ -37,9 +43,14 @@ let
   storePath = "${storeDirectory}/criome.sema";
   configurationPath = "${socketDirectory}/criome-daemon.rkyv";
 
-  # Stage A authorizes against one co-resident criome (1-of-1). The member set is
-  # the forward seam: members = [ a b c ] with a quorum contract becomes Stage B.
-  member = builtins.head members;
+  # Stage A realizes exactly ONE criome member (single guest, 1-of-1). `members`
+  # is the forward seam for Stage B (multi-node quorum across guests), which is
+  # not built yet — so reject >1 loudly rather than silently dropping the tail.
+  member =
+    if builtins.length members == 1 then
+      builtins.head members
+    else
+      throw "mkCriomeClusterTest realizes one criome member (Stage A); multi-node quorum (Stage B) is unbuilt — got ${toString (builtins.length members)} members";
   machineName = builtins.replaceStrings [ "-" ] [ "_" ] member;
 
   criomeNode =
