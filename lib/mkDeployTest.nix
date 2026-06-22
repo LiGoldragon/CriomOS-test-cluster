@@ -402,7 +402,7 @@ in
 assertModel (
   inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
     name = "lojix-deploy-smoke-${cluster}-${vmNode}";
-    requiredSystemFeatures = [
+    requiredFeatures = [
       "nixos-test"
       "criomos-vm-testing"
     ];

@@ -356,7 +356,7 @@ assertModel (
   # policy change.
   unfreePkgs.testers.runNixOSTest {
     name = "vm-test-${cluster}-${vmNode}";
-    requiredSystemFeatures = [
+    requiredFeatures = [
       "nixos-test"
       "criomos-vm-testing"
     ];
