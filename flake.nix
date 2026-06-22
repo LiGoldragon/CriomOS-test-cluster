@@ -67,13 +67,19 @@
           # hosted set over-subscribes the host's VmHost ceiling or subnet.
           # ================================================================
 
-          mkVmTest = import ./lib/mkVmTest.nix { inherit inputs pkgs self system; };
+          mkVmTest = import ./lib/mkVmTest.nix {
+            inherit
+              inputs
+              pkgs
+              self
+              system
+              ;
+          };
           standardTestFor = import ./lib/standardTest.nix { inherit lib; };
 
           # Read a committed horizon projection — the same fromJSON(readFile)
           # artifact mkVmTest reads, kept honest by projections-match-fieldlab.
-          readHorizon =
-            node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
+          readHorizon = node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
 
           # The python runNixOSTest driver mangles a node name's dashes to
           # underscores for its machine binding: edge-desktop -> edge_desktop.
@@ -93,8 +99,7 @@
             lib.attrNames (
               lib.filterAttrs (
                 _: exNode:
-                (exNode.machine.superNode or null) == vmHostNode
-                && (exNode.machine.species or null) == "Pod"
+                (exNode.machine.superNode or null) == vmHostNode && (exNode.machine.species or null) == "Pod"
               ) (hostHorizon.exNodes or { })
             )
           );
@@ -201,6 +206,57 @@
           autoVmChecks = lib.genAttrs (map (n: "vm-${n}") hostedNodes) (
             checkName: mkVmTest (specFor (lib.removePrefix "vm-" checkName))
           );
+
+          vmRequiredSystemFeatures = [
+            "nixos-test"
+            "criomos-vm-testing"
+          ];
+
+          deploySmokeCheck =
+            (import ./lib/mkDeployTest.nix {
+              inherit
+                inputs
+                pkgs
+                self
+                system
+                ;
+            })
+              {
+                cluster = "fieldlab";
+                hostNode = "atlas";
+                vmNode = "mercury";
+              };
+
+          vmBackedChecks = autoVmChecks // {
+            lojix-deploy-smoke = deploySmokeCheck;
+          };
+
+          vmFeatureOffenders = lib.filterAttrs (
+            _name: check:
+            !(lib.all (
+              feature: builtins.elem feature (check.requiredSystemFeatures or [ ])
+            ) vmRequiredSystemFeatures)
+          ) vmBackedChecks;
+
+          vmFeatureOffenderText = lib.concatMapStringsSep "\n" (
+            name:
+            let
+              actual = vmFeatureOffenders.${name}.requiredSystemFeatures or [ ];
+            in
+            "${name}: ${builtins.toJSON actual}"
+          ) (builtins.attrNames vmFeatureOffenders);
+
+          vmFeatureOffenderReport = pkgs.writeText "vm-required-system-feature-offenders.txt" vmFeatureOffenderText;
+
+          vmRequiredSystemFeaturesCheck = pkgs.runCommand "vm-required-system-features" { } ''
+            set -eu
+            if [ -s ${vmFeatureOffenderReport} ]; then
+              echo "VM-backed checks are missing requiredSystemFeatures ${builtins.toJSON vmRequiredSystemFeatures}:" >&2
+              cat ${vmFeatureOffenderReport} >&2
+              exit 1
+            fi
+            touch "$out"
+          '';
         in
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
@@ -275,31 +331,13 @@
           # dune is the proof: it had NO check before; declaring it a Pod on
           # atlas now yields a real Edge standard check by declaration alone.
           # ==================================================================
-          autoVmChecks
+          vmBackedChecks
           // {
-            # ================================================================
-            # C6 — the lojix-deploy SMOKE TEST stays one EXPLICIT call, OUTSIDE
-            # the per-node iteration: it is deploy-MACHINERY (the FIXED lojix
-            # daemon, <drv>^* fix) under a HERMETIC, REPEATABLE 2-node
-            # runNixOSTest — a deployer node deploys the TARGET's projected
-            # config into the target node; the target's system profile
-            # generation becomes the lojix-deployed closure (a real
-            # nixos-system, never the bare .drv). Psyche-scoped to
-            # generation-activation (NOT the full BootOnce reboot). See
-            # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,
-            # PATTERN comment there (Spirit [xxgp]); the integration risks
-            # (offline eval+build, address resolution, ssh-ng/store-copy, silent
-            # daemon) are unblocked IN the test (Spirit [dqg3]). It proves a
-            # representative node (mercury), not every node, so it is NOT
-            # auto-generated.
-            # ================================================================
-            lojix-deploy-smoke = (import ./lib/mkDeployTest.nix {
-              inherit inputs pkgs self system;
-            }) {
-              cluster = "fieldlab";
-              hostNode = "atlas";
-              vmNode = "mercury";
-            };
+            # Pure policy witness: this does NOT start QEMU. It inspects the
+            # derivation attributes of every VM-backed check and fails unless
+            # the Nix scheduler must route them to an explicitly authorized VM
+            # testing builder.
+            vm-required-system-features = vmRequiredSystemFeaturesCheck;
           }
         )
       );

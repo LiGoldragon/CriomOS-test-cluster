@@ -400,7 +400,7 @@ let
 in
 
 assertModel (
-  inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
+  (inputs.nixpkgs.legacyPackages.${system}.testers.runNixOSTest {
     name = "lojix-deploy-smoke-${cluster}-${vmNode}";
 
     # Both nodes carry the projected horizon as a specialArg exactly as production
@@ -570,5 +570,11 @@ assertModel (
       print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
             "the target's system profile generation is the deployed closure.")
     '';
-  }
+  }).overrideAttrs
+    (old: {
+      requiredSystemFeatures = (old.requiredSystemFeatures or [ ]) ++ [
+        "nixos-test"
+        "criomos-vm-testing"
+      ];
+    })
 )

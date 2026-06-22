@@ -110,8 +110,7 @@ let
 
   # The criome domain of a node from its own projection (never invented).
   guestDomainOf =
-    horizon:
-    horizon.node.criomeDomainName or "${horizon.node.name}.${horizon.cluster.name}.criome";
+    horizon: horizon.node.criomeDomainName or "${horizon.node.name}.${horizon.cluster.name}.criome";
 
   # The host's cluster-authored VmHost service (C1). The generator reads the
   # SAME datum test-vm-host.nix reads on the real host: services is a list of
@@ -135,8 +134,7 @@ let
       lib.attrNames (
         lib.filterAttrs (
           _: exNode:
-          (exNode.machine.superNode or null) == hostNodeName
-          && (exNode.machine.species or null) == "Pod"
+          (exNode.machine.superNode or null) == hostNodeName && (exNode.machine.species or null) == "Pod"
         ) (hostHorizon.exNodes or { })
       )
     );
@@ -165,7 +163,12 @@ let
       prefix = prefixLengthOf cidr;
       total = twoToThe (32 - prefix);
     in
-    if prefix == null then null else if prefix >= 31 then total else total - 2;
+    if prefix == null then
+      null
+    else if prefix >= 31 then
+      total
+    else
+      total - 2;
 
   # Slice the host-side endpoint for a guest out of the host's guest_subnet,
   # mirroring test-vm-host.nix's hostTapAddress (base + index + 1). The hermetic
@@ -239,10 +242,7 @@ let
   # a host that forgot to declare VmHost fails the test rather than silently
   # losing its address to a Nix default).
   hostTapAddress =
-    if vmHost == null || guestIndex == null then
-      null
-    else
-      hostTapAddressOf vmHost guestIndex;
+    if vmHost == null || guestIndex == null then null else hostTapAddressOf vmHost guestIndex;
 
   # The C3 substrate profile, substrate-parameterized.
   substrateProfile = import "${inputs.criomos}/modules/nixos/test-substrate.nix" {
@@ -302,7 +302,9 @@ let
     assert lib.assertMsg capacityOk
       "mkVmTest: hostNode ${hostNode} hosts ${toString hostedCount} Pod guests but declares maximum_guests = ${toString maximumGuests}; raise the ceiling or move guests.";
     assert lib.assertMsg subnetCapacityOk
-      "mkVmTest: hostNode ${hostNode} needs ${toString requiredSlots} guest tap slots but its VmHost.guest_subnet ${toString (vmHost.guestSubnet or null)} has only ${toString subnetHostSlots} usable host addresses; widen the subnet or reduce the hosted set.";
+      "mkVmTest: hostNode ${hostNode} needs ${toString requiredSlots} guest tap slots but its VmHost.guest_subnet ${
+        toString (vmHost.guestSubnet or null)
+      } has only ${toString subnetHostSlots} usable host addresses; widen the subnet or reduce the hosted set.";
     value;
 
   guestModuleFromCluster =
@@ -352,7 +354,7 @@ assertModel (
   # THIS pkgs onto every node, so configuring it once covers the guest. A
   # test-harness concern matching the production build environment, not an OS
   # policy change.
-  unfreePkgs.testers.runNixOSTest {
+  (unfreePkgs.testers.runNixOSTest {
     name = "vm-test-${cluster}-${vmNode}";
 
     # The guest is a real CriomOS node built from its projection — never a
@@ -393,5 +395,11 @@ assertModel (
       includeHome = includeHomeResolved;
       guestDomain = guestDomainOf guestHorizon;
     };
-  }
+  }).overrideAttrs
+    (old: {
+      requiredSystemFeatures = (old.requiredSystemFeatures or [ ]) ++ [
+        "nixos-test"
+        "criomos-vm-testing"
+      ];
+    })
 )
