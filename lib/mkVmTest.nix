@@ -354,8 +354,12 @@ assertModel (
   # THIS pkgs onto every node, so configuring it once covers the guest. A
   # test-harness concern matching the production build environment, not an OS
   # policy change.
-  (unfreePkgs.testers.runNixOSTest {
+  unfreePkgs.testers.runNixOSTest {
     name = "vm-test-${cluster}-${vmNode}";
+    requiredSystemFeatures = [
+      "nixos-test"
+      "criomos-vm-testing"
+    ];
 
     # The guest is a real CriomOS node built from its projection — never a
     # hand-stub. horizon is threaded as a per-node specialArg exactly as the
@@ -395,11 +399,5 @@ assertModel (
       includeHome = includeHomeResolved;
       guestDomain = guestDomainOf guestHorizon;
     };
-  }).overrideAttrs
-    (old: {
-      requiredSystemFeatures = (old.requiredSystemFeatures or [ ]) ++ [
-        "nixos-test"
-        "criomos-vm-testing"
-      ];
-    })
+  }
 )
