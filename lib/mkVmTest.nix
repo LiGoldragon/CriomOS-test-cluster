@@ -354,50 +354,63 @@ assertModel (
   # THIS pkgs onto every node, so configuring it once covers the guest. A
   # test-harness concern matching the production build environment, not an OS
   # policy change.
-  unfreePkgs.testers.runNixOSTest {
-    name = "vm-test-${cluster}-${vmNode}";
-    requiredFeatures = [
-      "nixos-test"
-      "criomos-vm-testing"
-    ];
+  (
+    (unfreePkgs.testers.runNixOSTest {
+      name = "vm-test-${cluster}-${vmNode}";
 
-    # The guest is a real CriomOS node built from its projection — never a
-    # hand-stub. horizon is threaded as a per-node specialArg exactly as the
-    # production nixosSystem receives it.
-    node.specialArgs = {
-      inherit constants;
-      horizon = guestHorizon;
-      inputs = inputs // {
-        sops-nix = inputs.criomos.inputs.sops-nix;
-        microvm = inputs.criomos.inputs.microvm;
-        secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
+      # The guest is a real CriomOS node built from its projection — never a
+      # hand-stub. horizon is threaded as a per-node specialArg exactly as the
+      # production nixosSystem receives it.
+      node.specialArgs = {
+        inherit constants;
+        horizon = guestHorizon;
+        inputs = inputs // {
+          sops-nix = inputs.criomos.inputs.sops-nix;
+          microvm = inputs.criomos.inputs.microvm;
+          secrets.sopsFiles.routerWifiSaePasswords = "${self}/fixtures/secrets/routerWifiSaePasswords";
+        };
+        # includeHome derived from the role (a lean TestVm drops home; any other
+        # role keeps the production home profile) — this is what makes a base-home
+        # test simply "a node whose role keeps home", with zero per-test authoring.
+        deployment = {
+          includeHome = includeHomeResolved;
+          includeComplex = false;
+        };
       };
-      # includeHome derived from the role (a lean TestVm drops home; any other
-      # role keeps the production home profile) — this is what makes a base-home
-      # test simply "a node whose role keeps home", with zero per-test authoring.
-      deployment = {
+
+      nodes.${vmNode} = guestModuleFromCluster;
+
+      # The author's testScript verbatim. ${vmNode} is the machine name the python
+      # driver binds, so the script reads `${vmNode}.wait_for_unit(...)`.
+      inherit testScript;
+
+      # Carry the derived facts in the derivation env purely for observability
+      # (they prove the address came from cluster data, not a literal).
+      passthru = {
+        inherit
+          hostTapAddress
+          guestIndex
+          kvmAvailable
+          hostedCount
+          ;
         includeHome = includeHomeResolved;
-        includeComplex = false;
+        guestDomain = guestDomainOf guestHorizon;
       };
-    };
-
-    nodes.${vmNode} = guestModuleFromCluster;
-
-    # The author's testScript verbatim. ${vmNode} is the machine name the python
-    # driver binds, so the script reads `${vmNode}.wait_for_unit(...)`.
-    inherit testScript;
-
-    # Carry the derived facts in the derivation env purely for observability
-    # (they prove the address came from cluster data, not a literal).
-    passthru = {
-      inherit
-        hostTapAddress
-        guestIndex
-        kvmAvailable
-        hostedCount
-        ;
-      includeHome = includeHomeResolved;
-      guestDomain = guestDomainOf guestHorizon;
-    };
-  }
+    }).overrideTestDerivation
+      (old: {
+        requiredSystemFeatures = (old.requiredSystemFeatures or [ ]) ++ [
+          "nixos-test"
+          "criomos-vm-testing"
+        ];
+      })
+    // {
+      # Evaluator-visible mirror of the scheduler gate above. The runNixOSTest
+      # wrapper hides the underlying derivation env, so pure policy checks read
+      # this field while the actual .drv carries requiredSystemFeatures.
+      requiredSystemFeatures = [
+        "nixos-test"
+        "criomos-vm-testing"
+      ];
+    }
+  )
 )
