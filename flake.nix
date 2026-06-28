@@ -31,6 +31,15 @@
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
 
     upgrade.url = "github:LiGoldragon/upgrade";
+
+    # The criome-auth witness stack, pinned to the audit-gated witness/integration
+    # branches so the whole two-VM boot resolves ONE consistent wire generation
+    # (signal-criome 0.6.0 / signal-frame 0.3.0). Consumed only by the
+    # criome-auth-witness check + app; the existing fieldlab checks are untouched.
+    criome.url = "github:LiGoldragon/criome?ref=criome-auth-integration";
+    router.url = "github:LiGoldragon/router?ref=criome-auth-witness";
+    mirror.url = "github:LiGoldragon/mirror?ref=criome-auth-witness";
+    spirit.url = "github:LiGoldragon/spirit";
   };
 
   outputs =
@@ -300,6 +309,14 @@
               hostNode = "atlas";
               vmNode = "mercury";
             };
+
+            # The two-VM criome-attestation witness (see lib/mkCriomeAuthWitnessTest.nix).
+            # As a `checks` entry it is a store-realised green; the FORCED-BOOT
+            # reproduce path is `apps.<system>.test-criome-auth-witness`, which
+            # runs the test driver so VMs boot on every invocation.
+            criome-auth-witness = import ./lib/mkCriomeAuthWitnessTest.nix {
+              inherit inputs system;
+            };
           }
         )
       );
@@ -476,6 +493,20 @@
             ];
             text = builtins.readFile ./scripts/run-on-prometheus;
           };
+
+          # The forced-boot reproduce command for the criome-auth witness: pins
+          # the committed self revision, ssh-es to prometheus, and runs the test
+          # DRIVER there (boots VMs every invocation), collecting the per-link
+          # evidence. See scripts/run-criome-auth-on-prometheus.
+          run-criome-auth-on-prometheus = pkgs.writeShellApplication {
+            name = "run-criome-auth-on-prometheus";
+            runtimeInputs = [
+              pkgs.jujutsu
+              pkgs.openssh
+              pkgs.bash
+            ];
+            text = builtins.readFile ./scripts/run-criome-auth-on-prometheus;
+          };
         }
       );
 
@@ -500,6 +531,20 @@
         run-on-prometheus = {
           type = "app";
           program = "${self.packages.${system}.run-on-prometheus}/bin/run-on-prometheus";
+        };
+
+        # FORCED-BOOT witness driver: `nix run .#test-criome-auth-witness` runs
+        # the runNixOSTest driver, booting both VMs every invocation (only the
+        # driver package is cached, never the boot — defeats the cached-check
+        # zero-VM green). Must run on a VM-testing host (prometheus).
+        test-criome-auth-witness = {
+          type = "app";
+          program = "${self.checks.${system}.criome-auth-witness.driver}/bin/nixos-test-driver";
+        };
+
+        run-criome-auth-on-prometheus = {
+          type = "app";
+          program = "${self.packages.${system}.run-criome-auth-on-prometheus}/bin/run-criome-auth-on-prometheus";
         };
       });
 

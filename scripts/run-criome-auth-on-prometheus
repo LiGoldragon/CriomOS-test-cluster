@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Reproduce the two-VM criome-auth witness on prometheus, FORCING A REAL BOOT
+# every invocation. It anchors to a CLEAN COMMITTED revision (refuses a dirty
+# tree), pushes the witness branch, then ssh-es to the VM-testing host and runs
+# the runNixOSTest DRIVER there: `nix run ...#test-criome-auth-witness` boots
+# both guests on each run (only the driver package is cached, never the boot),
+# so it cannot be satisfied by a cached zero-VM `checks` green.
+#
+# The boot MUST happen natively on prometheus: ouranos (a laptop) is forbidden
+# to fire QEMU, and prometheus's /etc/nix/machines lacks the `nixos-test`
+# feature so the boot cannot be remote-scheduled — prometheus's LOCAL nix
+# (system-features includes kvm + nixos-test) runs it.
+#
+# Usage:  scripts/run-criome-auth-on-prometheus [host]
+set -euo pipefail
+
+host="${1:-prometheus.goldragon.criome}"
+branch="criome-auth-witness"
+owner_repo="LiGoldragon/CriomOS-test-cluster"
+
+# Anchor to a clean committed revision — no dirty-tree green.
+if ! jj status | grep -q "The working copy has no changes"; then
+  echo "refusing: the working tree is dirty; commit before reproducing the witness" >&2
+  jj status >&2 || true
+  exit 1
+fi
+
+jj git push --bookmark "$branch"
+rev="$(jj log -r "$branch" --no-graph -T 'commit_id')"
+
+echo "criome-auth witness reproduce"
+echo "  host     = $host"
+echo "  repo     = $owner_repo"
+echo "  revision = $rev"
+
+ssh "$host" 'bash -s' <<REMOTE
+set -euo pipefail
+echo "=== L1: VM-testing host facts ==="
+echo "RUN_HOST=\$(hostname)"
+echo "RUN_KVM=\$(test -e /dev/kvm && echo present || echo ABSENT)"
+echo "RUN_REVISION=${rev}"
+echo "RUN_TIMESTAMP=\$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "RUN_SYSTEM_FEATURES=\$(nix show-config 2>/dev/null | grep '^system-features' || true)"
+echo "=== booting both guests via the runNixOSTest driver (boots every run) ==="
+exec nix run "github:${owner_repo}/${rev}#test-criome-auth-witness"
+REMOTE
