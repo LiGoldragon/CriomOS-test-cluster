@@ -39,7 +39,10 @@
     criome.url = "github:LiGoldragon/criome?ref=criome-auth-integration";
     router.url = "github:LiGoldragon/router?ref=criome-auth-witness";
     mirror.url = "github:LiGoldragon/mirror?ref=criome-auth-witness";
-    spirit.url = "github:LiGoldragon/spirit";
+    # spirit's criome-auth-witness branch adds the owner-only meta `ObserveHead`
+    # op (the REAL versioned-log head the witness forwards) and re-pins its own
+    # meta-signal-spirit to 0.3.0; the prior pin was the offline-default base.
+    spirit.url = "github:LiGoldragon/spirit?ref=criome-auth-witness";
   };
 
   outputs =
@@ -76,13 +79,19 @@
           # hosted set over-subscribes the host's VmHost ceiling or subnet.
           # ================================================================
 
-          mkVmTest = import ./lib/mkVmTest.nix { inherit inputs pkgs self system; };
+          mkVmTest = import ./lib/mkVmTest.nix {
+            inherit
+              inputs
+              pkgs
+              self
+              system
+              ;
+          };
           standardTestFor = import ./lib/standardTest.nix { inherit lib; };
 
           # Read a committed horizon projection — the same fromJSON(readFile)
           # artifact mkVmTest reads, kept honest by projections-match-fieldlab.
-          readHorizon =
-            node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
+          readHorizon = node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
 
           # The python runNixOSTest driver mangles a node name's dashes to
           # underscores for its machine binding: edge-desktop -> edge_desktop.
@@ -102,8 +111,7 @@
             lib.attrNames (
               lib.filterAttrs (
                 _: exNode:
-                (exNode.machine.superNode or null) == vmHostNode
-                && (exNode.machine.species or null) == "Pod"
+                (exNode.machine.superNode or null) == vmHostNode && (exNode.machine.species or null) == "Pod"
               ) (hostHorizon.exNodes or { })
             )
           );
@@ -302,13 +310,20 @@
             # representative node (mercury), not every node, so it is NOT
             # auto-generated.
             # ================================================================
-            lojix-deploy-smoke = (import ./lib/mkDeployTest.nix {
-              inherit inputs pkgs self system;
-            }) {
-              cluster = "fieldlab";
-              hostNode = "atlas";
-              vmNode = "mercury";
-            };
+            lojix-deploy-smoke =
+              (import ./lib/mkDeployTest.nix {
+                inherit
+                  inputs
+                  pkgs
+                  self
+                  system
+                  ;
+              })
+                {
+                  cluster = "fieldlab";
+                  hostNode = "atlas";
+                  vmNode = "mercury";
+                };
 
             # The two-VM criome-attestation witness (see lib/mkCriomeAuthWitnessTest.nix).
             # As a `checks` entry it is a store-realised green; the FORCED-BOOT
@@ -544,7 +559,9 @@
 
         run-criome-auth-on-prometheus = {
           type = "app";
-          program = "${self.packages.${system}.run-criome-auth-on-prometheus}/bin/run-criome-auth-on-prometheus";
+          program = "${
+            self.packages.${system}.run-criome-auth-on-prometheus
+          }/bin/run-criome-auth-on-prometheus";
         };
       });
 
