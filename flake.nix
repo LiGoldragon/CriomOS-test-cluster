@@ -36,13 +36,13 @@
     # branches so the whole two-VM boot resolves ONE consistent wire generation
     # (signal-criome 0.6.0 / signal-frame 0.3.0). Consumed only by the
     # criome-auth-witness check + app; the existing fieldlab checks are untouched.
-    criome.url = "github:LiGoldragon/criome?ref=criome-auth-integration";
-    router.url = "github:LiGoldragon/router?ref=criome-auth-witness";
-    mirror.url = "github:LiGoldragon/mirror?ref=criome-auth-witness";
-    # spirit's criome-auth-witness branch adds the owner-only meta `ObserveHead`
-    # op (the REAL versioned-log head the witness forwards) and re-pins its own
-    # meta-signal-spirit to 0.3.0; the prior pin was the offline-default base.
-    spirit.url = "github:LiGoldragon/spirit?ref=criome-auth-witness";
+    criome.url = "github:LiGoldragon/criome";
+    router.url = "github:LiGoldragon/router";
+    mirror.url = "github:LiGoldragon/mirror";
+    # spirit main carries the owner-only meta `ObserveHead` + `ObserveHeadObject`
+    # ops (the REAL versioned-log head + rkyv body the witness forwards), with
+    # meta-signal-spirit 0.4.0 landed on main.
+    spirit.url = "github:LiGoldragon/spirit";
   };
 
   outputs =

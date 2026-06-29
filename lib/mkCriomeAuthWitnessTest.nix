@@ -234,9 +234,9 @@ let
 
   # The record seeded into spirit. The head forwarded through the router is the
   # store's REAL versioned-log head, read back from the seeded daemon via the
-  # owner-only meta op `ObserveHead` (spirit `criome-auth-witness`) — NOT a
+  # owner-only meta op `ObserveHead` (spirit main) — NOT a
   # synthetic hash of the identifier/description. So the head criome attests and
-  # the mirror durably lands is the spirit store's own content-addressed head.
+  # the mirror durably lands is the store's content-addressed head over the imported record.
   recordIdentifier = "witness-record-1";
   recordDescription = "criome auth witness record";
   # The record identifier is a bare-eligible string (no brackets — redundant

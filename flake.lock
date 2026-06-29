@@ -722,16 +722,15 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1782665256,
-        "narHash": "sha256-6uLhaMTkWJKI0FDVOk0D4Xn+er0LN53FlLQikyxfdio=",
+        "lastModified": 1782728282,
+        "narHash": "sha256-s4C5rXpf4h4IIi8zFgmSzG7fYq/+SPUSx7HdBWZbKyw=",
         "owner": "LiGoldragon",
         "repo": "criome",
-        "rev": "4dc374f261db5d8d2bb62cb614f42a8592bca86f",
+        "rev": "4c820a057c3c46eb8d17c5ef55c4468bfc22d85e",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-auth-integration",
         "repo": "criome",
         "type": "github"
       }
@@ -1964,11 +1963,11 @@
     "meta-signal-criome-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1782232742,
-        "narHash": "sha256-qMsz6WDobk1B92DsM31elhesAaoD9OWuyo2irpJLsI4=",
+        "lastModified": 1782728192,
+        "narHash": "sha256-byASZ5YFDv2SMsyOqiSAlqddZr/vNJsCbX0FIatpitM=",
         "ref": "main",
-        "rev": "507c56f570807ee1062a7e702b222b4c7691532e",
-        "revCount": 15,
+        "rev": "1fc655bc6eaad11cb27a99d6cb28cf9e7d1bbe8e",
+        "revCount": 19,
         "type": "git",
         "url": "https://github.com/LiGoldragon/meta-signal-criome.git"
       },
@@ -2038,7 +2037,6 @@
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-auth-witness",
         "repo": "meta-signal-spirit",
         "type": "github"
       }
@@ -2120,7 +2118,6 @@
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-auth-witness",
         "repo": "mirror",
         "type": "github"
       }
@@ -2941,16 +2938,15 @@
         "nixpkgs": "nixpkgs_8"
       },
       "locked": {
-        "lastModified": 1782722571,
-        "narHash": "sha256-dMibg7cHw9yeACGnOyBaTECCHWJnp+TdAvJVX94HOls=",
+        "lastModified": 1782732250,
+        "narHash": "sha256-EQOWZfKEwjSf3ivSJBKrnLd99GTHgaEa0SVI2mJDfUg=",
         "owner": "LiGoldragon",
         "repo": "router",
-        "rev": "2f4e51d57d4671bff0cfb38302e7f29ea6edc5b4",
+        "rev": "14ed682b47bf399aeb25ea8dea674275e15aa7a4",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-auth-witness",
         "repo": "router",
         "type": "github"
       }
@@ -3602,11 +3598,11 @@
     "signal-criome-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1782230987,
-        "narHash": "sha256-Rn+bcESC/xfXBVIsamWTlRIlRE9Rq9JTX43AtfXPu7I=",
+        "lastModified": 1782663839,
+        "narHash": "sha256-tArxV+UkKTAGj3obbFKVeEpEdCjpNdeqouGKawbQzHQ=",
         "ref": "main",
-        "rev": "182036acc4e763b9ef6c763082f6c277785f86b3",
-        "revCount": 70,
+        "rev": "5976b2870e0231742dc1a8bf4db17fd98f8f6b61",
+        "revCount": 73,
         "type": "git",
         "url": "https://github.com/LiGoldragon/signal-criome.git"
       },
@@ -3635,11 +3631,11 @@
     "signal-frame-source_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1782230058,
-        "narHash": "sha256-K0pxouO1U8+CyW2ad7vsj5Ed1AE2LMZPTS6ggL9fmh0=",
+        "lastModified": 1782545367,
+        "narHash": "sha256-jftKhvUPV3jm3Ule+mdsX8Msll2g68/I9tA/szDQgx0=",
         "ref": "main",
-        "rev": "d0dd5c0b66a90c1af72d45920e31c2b3049437f9",
-        "revCount": 67,
+        "rev": "b78c80775c7fb7f80dee7ea3a8a30cc14dfac442",
+        "revCount": 68,
         "type": "git",
         "url": "https://github.com/LiGoldragon/signal-frame.git"
       },
@@ -3958,16 +3954,15 @@
         "version-projection-source": "version-projection-source_2"
       },
       "locked": {
-        "lastModified": 1782723090,
-        "narHash": "sha256-Jc82LCObCfwDfewcDUZ3bsHx/uhOv3FO+UrMFjXXO9s=",
+        "lastModified": 1782732395,
+        "narHash": "sha256-EZT8J7BVibHgoySCrNzE7h0uYFNknLhIikx7e/BUD9Q=",
         "owner": "LiGoldragon",
         "repo": "spirit",
-        "rev": "57eb6475df2a186455b9749118f96ef2720ef28d",
+        "rev": "9e413baa9a9a2456d1de9d9a500e56178ad69461",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "criome-auth-witness",
         "repo": "spirit",
         "type": "github"
       }
