@@ -84,8 +84,38 @@ copy AND the activation ssh; and the silent daemon is observed by polling the
 target's own profile link plus the durable Query state. This is the one place
 the production path that caught the `.drv` bug runs under repeatable test.
 
+## Making VM testing real (the cross-component witness)
+
+The point of the booted-VM altitude is to make VM testing *real*: validate the
+criome/lojix cluster with a fully-networked multi-node test substrate where the
+spirit gate is authenticated end-to-end through one reusable interface. One
+identical propagation test targets three substrates — a default hermetic,
+host-untouched `runNixOSTest` VM cluster on prometheus; an opt-in durable
+on-demand microvm node on prometheus (router/production untouched); and opt-in
+DigitalOcean droplets for cross-machine validation. The gate accepts an
+authorized head and rejects an unauthorized one fail-closed, building from
+1-of-1 local toward multi-machine quorum. The lojix production-cutover e2e
+deploys a full OS into a throwaway KVM VM and proves it survives SSH disconnect.
+
+The **first witness that makes VM testing real** proves criome auth propagation
+through the persona router authenticating a real Spirit record: the recorded
+spirit→criome→router→mirror chain, sourced from a no-guardian Spirit daemon (the
+real Spirit daemon with its LLM agent-guardian gate removed) and received by
+mirror. It includes the fail-closed negative control where a head bearing no
+valid criome credential is refused, not only the positive accept. It runs on
+prometheus on real booting VMs, and a Nix store cache-hit must not be able to
+fake it: a re-run must actually boot the VMs (Spirit [7let]).
+
 ## Non-negotiables
 
+- **Proof is first-hand reproducible evidence, not a green result** (Spirit
+  [vcin]). For a VM or multi-component interaction test the witness is evidence
+  the psyche can observe or re-run himself: a timestamped log for each causal
+  link of the interaction (the VM booted on the host, each component came up,
+  the message was sent, the message was received and verified by the other
+  side) plus a single command that reproduces the whole run. A passing or green
+  result is not the deliverable; observable, reproducible proof that feels real
+  is. A quiet local check is suspect unless it is a known heavyweight build.
 - **No hand-stubbed horizon.** A guest is always built from a committed
   projection that `projections-match-fieldlab` pins to `horizon-cli`. Inventing
   a node's facts inline defeats the repo's entire reason to exist.
