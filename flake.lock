@@ -2029,11 +2029,11 @@
     "meta-signal-spirit-source_2": {
       "flake": false,
       "locked": {
-        "lastModified": 1782689316,
-        "narHash": "sha256-BxSsfC5rBE+DHb61xdcnJpeHQCrPHxIiul7G9QUY6Lo=",
+        "lastModified": 1782721763,
+        "narHash": "sha256-fzlOx/kVNDjNu2gUrh8GXJphk5IjPaBTs99JApZtuBY=",
         "owner": "LiGoldragon",
         "repo": "meta-signal-spirit",
-        "rev": "783cd5024507bbf339bd92dad3bba38cd64cb40d",
+        "rev": "98704a3573cd22aec80349b6b16b82fb2ada6499",
         "type": "github"
       },
       "original": {
@@ -2111,11 +2111,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1782668778,
-        "narHash": "sha256-rswI386kMeLE75HaCX52By0mA35rBaBtr75yqw/wa68=",
+        "lastModified": 1782724639,
+        "narHash": "sha256-X09USoVcPIFuZp9OkWSkkqTIWLYPzzResUIAqaIm5DY=",
         "owner": "LiGoldragon",
         "repo": "mirror",
-        "rev": "d30cd180507cd52d0369d2ec8b49136fdfca8458",
+        "rev": "5102f5ed87d10d6a7386358b3b10214a04fdf89d",
         "type": "github"
       },
       "original": {
@@ -2941,11 +2941,11 @@
         "nixpkgs": "nixpkgs_8"
       },
       "locked": {
-        "lastModified": 1782688300,
-        "narHash": "sha256-/WaVwucz8BRELx2MLu7BpI3mC4Tl4yaMP02/CPSiB7c=",
+        "lastModified": 1782722571,
+        "narHash": "sha256-dMibg7cHw9yeACGnOyBaTECCHWJnp+TdAvJVX94HOls=",
         "owner": "LiGoldragon",
         "repo": "router",
-        "rev": "221b5fb04b838f3a5bbd2a6839d60aa2574902fd",
+        "rev": "2f4e51d57d4671bff0cfb38302e7f29ea6edc5b4",
         "type": "github"
       },
       "original": {
@@ -3958,11 +3958,11 @@
         "version-projection-source": "version-projection-source_2"
       },
       "locked": {
-        "lastModified": 1782689413,
-        "narHash": "sha256-72vbbs/PQadS54gN2ZVm+gAQ7Pm8mZ8ek4CjNdR+oV8=",
+        "lastModified": 1782723090,
+        "narHash": "sha256-Jc82LCObCfwDfewcDUZ3bsHx/uhOv3FO+UrMFjXXO9s=",
         "owner": "LiGoldragon",
         "repo": "spirit",
-        "rev": "7d1b069718a0ddede6e3928ecef272f25caaee6b",
+        "rev": "57eb6475df2a186455b9749118f96ef2720ef28d",
         "type": "github"
       },
       "original": {

@@ -49,10 +49,20 @@ let
 
   criomePackage = inputs.criome.packages.${system}.default;
   routerPackage = inputs.router.packages.${system}.witness;
-  mirrorPackage = inputs.mirror.packages.${system}.default;
+  # The mirror WITNESS package: the daemon + nota-text CLIs PLUS the
+  # mirror-landed-body-verifier bin node-b runs in the VM to re-hash the landed
+  # body. (The witness feature also enables nota-text; the daemon is functionally
+  # identical to .default.)
+  mirrorPackage = inputs.mirror.packages.${system}.witness;
   spiritPackage = inputs.spirit.packages.${system}.default;
 
   routerTcpPort = 7440;
+
+  # The REAL record entry body (rkyv VersionedCommitLogEntry), sourced from the
+  # seeded spirit head via the owner-only meta op ObserveHeadObject and decoded
+  # to this file on each node, so every forward carries the genuine
+  # content-addressed body — not a placeholder.
+  witnessBodyPath = "/run/witness/entry.body";
 
   # criome working + meta sockets and the durable store, per node.
   criomeSocket = "/run/criome/criome.sock";
@@ -209,6 +219,11 @@ let
       cores = 2;
       memorySize = 2048;
     };
+    # Both nodes hold the decoded real entry body so every forward (the two
+    # negatives and the positive) carries the identical genuine body.
+    systemd.tmpfiles.rules = [
+      "d /run/witness 0755 root root -"
+    ];
     environment.systemPackages = [
       criomePackage
       routerPackage
@@ -332,6 +347,30 @@ pkgs.testers.runNixOSTest {
     head = head_match.group(1)
     print("L3 OK: real spirit versioned-log head (ObserveHead) =", head)
 
+    # L3 — source the REAL head ENTRY BODY (the rkyv VersionedCommitLogEntry,
+    # byte-identical to what the production shipper ships) over the owner-only
+    # meta op `ObserveHeadObject` (spirit criome-auth-witness). Decode the hex to
+    # a binary file on BOTH nodes so every forward (the two negatives and the
+    # positive) carries the identical genuine body — keeping the registered key
+    # the ONLY difference between refuse and accept. The body is consistent with
+    # `head` by construction (both from the same seeded entry): re-deriving the
+    # body's content address reproduces `head`.
+    object_reply = node_a.succeed(
+        "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '(ObserveHeadObject)'"
+    ).strip()
+    object_match = re.search(r"\(Some ([0-9a-f]+)\)", object_reply)
+    assert object_match, f"ObserveHeadObject must report the real head body: {object_reply!r}"
+    body_hex = object_match.group(1)
+    assert len(body_hex) > 0 and len(body_hex) % 2 == 0, (
+        f"the head body hex must be non-empty and even-length: {len(body_hex)}"
+    )
+    for node in (node_a, node_b):
+        node.succeed(
+            f"printf '%s' {body_hex} | ${pkgs.xxd}/bin/xxd -r -p > ${witnessBodyPath}"
+        )
+        node.succeed("test -s ${witnessBodyPath}")
+    print("L3 OK: real head ENTRY BODY sourced (ObserveHeadObject); body octets =", len(body_hex) // 2)
+
     # ===================================================================
     # L5-prep — register the mirror store BEFORE any forward. An Append to an
     # unregistered store is refused UnknownStore (the head row must exist), so the
@@ -398,7 +437,7 @@ pkgs.testers.runNixOSTest {
     negative_one = node_a.succeed(
         "CRIOME_SOCKET=${criomeSocket} ROUTER_PEER_ADDRESS=node-b:${toString routerTcpPort} "
         "NODE_IDENTITY=node-a MIRROR_STORE=spirit HEAD_DIGEST_HEX=" + head + " "
-        "FORWARD_NONCE=witness-negative-1 ${routerPackage}/bin/router-forward-witness"
+        "ENTRY_BODY_PATH=${witnessBodyPath} FORWARD_NONCE=witness-negative-1 ${routerPackage}/bin/router-forward-witness"
     ).strip()
     print("L6a negative-1 (unregistered) forward outcome:", negative_one)
     assert "ForwardRefused" in negative_one, f"unregistered signer must be refused: {negative_one!r}"
@@ -444,7 +483,7 @@ pkgs.testers.runNixOSTest {
     negative_two = node_b.succeed(
         "CRIOME_SOCKET=${criomeSocket} ROUTER_PEER_ADDRESS=127.0.0.1:${toString routerTcpPort} "
         "NODE_IDENTITY=node-a MIRROR_STORE=spirit HEAD_DIGEST_HEX=" + head + " "
-        "FORWARD_NONCE=witness-negative-2 ${routerPackage}/bin/router-forward-witness"
+        "ENTRY_BODY_PATH=${witnessBodyPath} FORWARD_NONCE=witness-negative-2 ${routerPackage}/bin/router-forward-witness"
     ).strip()
     print("L6b negative-2 (registered, foreign key) forward outcome:", negative_two)
     assert "ForwardRefused" in negative_two, f"foreign signature must be refused: {negative_two!r}"
@@ -477,7 +516,7 @@ pkgs.testers.runNixOSTest {
     positive = node_a.succeed(
         "CRIOME_SOCKET=${criomeSocket} ROUTER_PEER_ADDRESS=node-b:${toString routerTcpPort} "
         "NODE_IDENTITY=node-a MIRROR_STORE=spirit HEAD_DIGEST_HEX=" + head + " "
-        "FORWARD_NONCE=witness-positive-1 ${routerPackage}/bin/router-forward-witness"
+        "ENTRY_BODY_PATH=${witnessBodyPath} FORWARD_NONCE=witness-positive-1 ${routerPackage}/bin/router-forward-witness"
     ).strip()
     print("L4 positive forward outcome:", positive)
     assert "ForwardAccepted" in positive, f"registered matching-key signer must be accepted: {positive!r}"
@@ -501,14 +540,52 @@ pkgs.testers.runNixOSTest {
     )
     print("L5 OK: real spirit head durably landed in the mirror; mirror head ==", landed_head)
 
+    # ===================================================================
+    # L5-body (FULL-BODY proof) — the REAL record body that crossed the criome
+    # gate is read back OUT of node-b's mirror and RE-HASHED IN THE VM to the
+    # real head. The mirror landing assertion above only proves the carried
+    # DIGEST landed; this proves the carried BODY is the genuine, intact record:
+    # publish a zero-coverage checkpoint so Restore hands back the landed body,
+    # then run the in-VM verifier, which decodes the binary Output::Restored
+    # reply directly (no NOTA byte-list parsing), reconstructs the
+    # VersionedCommitLogEntry through sema-engine, re-derives its content
+    # address, and EXITS NONZERO unless the 32 digest BYTES equal the real
+    # forwarded head. The proof is the bin's exit code + its printed re-hash, NOT
+    # a shell string compare against a Debug render.
+    # ===================================================================
+    checkpoint = node_b.succeed(
+        "MIRROR_SOCKET=${mirrorWorking} ${mirrorPackage}/bin/mirror "
+        "'(PublishCheckpoint (spirit 1 0 0000000000000000000000000000000000000000000000000000000000000000 []))'"
+    ).strip()
+    print("L5-body checkpoint:", checkpoint)
+    assert "CheckpointPublished" in checkpoint, (
+        f"the zero-coverage checkpoint must publish so Restore hands back the body: {checkpoint!r}"
+    )
+
+    rehash = node_b.succeed(
+        "MIRROR_SOCKET=${mirrorWorking} WITNESS_STORE=spirit "
+        "EXPECTED_HEAD_HEX=" + head + " ${mirrorPackage}/bin/mirror-landed-body-verifier"
+    ).strip()
+    print("L5-body re-hash:", rehash)
+    assert "MATCH" in rehash, (
+        f"L5-body: the landed body must re-hash IN THE VM to the real head: {rehash!r}"
+    )
+    assert head in rehash, (
+        f"L5-body: the re-hash evidence must carry the real forwarded head {head}: {rehash!r}"
+    )
+    print("L5-body OK: the REAL landed body re-hashes IN THE VM to the real spirit head", head)
+
     print("WITNESS GREEN (full chain): a real Spirit record was seeded on a fail-closed "
           "guardian daemon (meta Import; ordinary Record refused HarnessUnavailable); its REAL "
-          "versioned-log head (ObserveHead) was attested by criome A and forwarded through the "
-          "persona router to node-b. node-b's criome REFUSED the unregistered signer (negative-1, "
-          "UnknownSigner -> AttestationInvalid) and a registered identity bearing a FOREIGN "
-          "signature (negative-2, InvalidSignature -> AttestationInvalid), leaving the mirror "
-          "empty; after registering node-a's REAL key it ACCEPTED the matching-key forward "
-          "(ForwardAccepted) and the carried Append durably LANDED in the mirror with head == the "
-          "real spirit head — the registered matching key is the sole gate.")
+          "versioned-log head (ObserveHead) AND head ENTRY BODY (ObserveHeadObject) were attested "
+          "by criome A and forwarded through the persona router to node-b. node-b's criome REFUSED "
+          "the unregistered signer (negative-1, UnknownSigner -> AttestationInvalid) and a "
+          "registered identity bearing a FOREIGN signature (negative-2, InvalidSignature -> "
+          "AttestationInvalid), leaving the mirror empty; after registering node-a's REAL key it "
+          "ACCEPTED the matching-key forward (ForwardAccepted) and the carried Append durably "
+          "LANDED in the mirror with head == the real spirit head. The landed BODY was then read "
+          "back over Restore and RE-HASHED IN THE VM through sema-engine to reproduce the real "
+          "head — full-body replication, not just a digest. The registered matching key is the "
+          "sole gate.")
   '';
 }
