@@ -1,8 +1,5 @@
 # Agent Instructions - CriomOS Test Cluster
 
-You MUST read lore's `AGENTS.md` and the primary workspace
-`AGENTS.md` before editing.
-
 ## Repo Role
 
 This repository is an independent fixture cluster for CriomOS,
