@@ -325,6 +325,22 @@
                   vmNode = "mercury";
                 };
 
+            # Feasibility spike (see lib/nestedSpike.nix): boots a NESTED
+            # microvm guest inside a runNixOSTest host node and asserts its
+            # console is host-observable — the load-bearing unknown for a
+            # faithful test-vm-host.nix tap-networking test.
+            nested-microvm-spike = import ./lib/nestedSpike.nix {
+              inherit inputs pkgs system;
+            };
+
+            # The faithful two-guest reachability gate (see
+            # lib/nestedReachability.nix): atlas boots alpha (5::7) + beta
+            # (5::8) as NESTED microvms via test-vm-host.nix and proves alpha
+            # reaches beta by ping AND TCP over the real tap path.
+            nested-vm-guest-reachability = import ./lib/nestedReachability.nix {
+              inherit inputs pkgs self system;
+            };
+
             # The two-VM criome-attestation witness (see lib/mkCriomeAuthWitnessTest.nix).
             # As a `checks` entry it is a store-realised green; the FORCED-BOOT
             # reproduce path is `apps.<system>.test-criome-auth-witness`, which

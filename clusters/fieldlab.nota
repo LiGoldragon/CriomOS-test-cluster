@@ -26,7 +26,7 @@
       False
       (Some (wan0 wlan0 TwoG 6 Wifi6 (Some (routerWifiSaePasswords)) None))
       (Some True)
-      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache) (VmHost 169.254.100.0/22 Available (Some 4))])
+      [(TailnetClient) (TailnetController) (NixBuilder (Some 8)) (NixCache) (VmHost 169.254.100.0/22 Available (Some 6))])
     beacon (MediaBroadcast
       Medium
       Max
@@ -127,6 +127,50 @@
       None
       (Some True)
       [(TailnetClient)])
+    alpha (TestVm
+      Min
+      Max
+      (Pod (Some X86_64) 2 None None (Some atlas) (Some aria) None (Some 2) (Some 8) (Some home-lab) [])
+      (Qwerty
+        Uefi
+        {
+          / (/dev/vda Ext4 [])
+        }
+        [])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIAlphaFixtureSshPublicKeyBody000000000 None None)
+      []
+      (Some 5::7/128)
+      None
+      False
+      False
+      []
+      False
+      False
+      None
+      (Some True)
+      [(TailnetClient)])
+    beta (TestVm
+      Min
+      Max
+      (Pod (Some X86_64) 2 None None (Some atlas) (Some aria) None (Some 2) (Some 8) (Some home-lab) [])
+      (Qwerty
+        Uefi
+        {
+          / (/dev/vda Ext4 [])
+        }
+        [])
+      (AAAAC3NzaC1lZDI1NTE5AAAAIBetaFixtureSshPublicKeyBody0000000000 None None)
+      []
+      (Some 5::8/128)
+      None
+      False
+      False
+      []
+      False
+      False
+      None
+      (Some True)
+      [(TailnetClient)])
     edge-desktop (Edge
       Min
       Max
@@ -201,6 +245,8 @@
       cedar Max
       dune Max
       mercury Max
+      alpha Max
+      beta Max
       edge-desktop Max
       base-home Max
     }
