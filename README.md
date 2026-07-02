@@ -59,3 +59,35 @@ down:
 ```sh
 nix run .#nspawn-dune-on-prometheus
 ```
+
+### Inner loop without GitHub
+
+The public-flake runners above push `main` so Prometheus can evaluate a
+`github:` ref, which is the durable publish path. The tight inner loop does
+**not** have to depend on GitHub being up: build a **local** checkout and the
+local nix daemon ships the derivation closure to Prometheus itself over the
+trusted remote-builder SSH path (host-key-authenticated `nix.sshServe`, the
+same connection ordinary remote builds use). For example, from a dispatcher
+such as `ouranos`:
+
+```sh
+# builds on Prometheus over the builder connection; no GitHub round-trip
+nix build /path/to/CriomOS-test-cluster#checks.x86_64-linux.vm-mercury \
+  --no-link --print-build-logs
+```
+
+The dispatch uses the nix daemon's builder identity (the dispatcher's SSH host
+key, authorized in Prometheus's `nix.sshServe.keys`), so it needs no per-user
+credential. To pre-seed a specific store path outside a build dispatch, an
+explicit `nix copy` must run over that same trusted identity (i.e. as the
+daemon/root using the host key), since ordinary user keys are not authorized on
+the builder's restricted `nix-ssh` account:
+
+```sh
+sudo NIX_SSHOPTS="-i /etc/ssh/ssh_host_ed25519_key" \
+  nix copy --to ssh-ng://nix-ssh@prometheus.goldragon.criome <store-path>
+```
+
+In practice the local-checkout `nix build` above already ships the closure for
+you. Keep `git push` as the publish of record; this local-dispatch path is the
+availability fallback so an inner iteration is not blocked by GitHub.
