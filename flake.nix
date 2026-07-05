@@ -300,7 +300,8 @@
             # daemon, <drv>^* fix) under a HERMETIC, REPEATABLE 2-node
             # runNixOSTest — a deployer node deploys the TARGET's projected
             # config into the target node; the target's system profile
-            # generation becomes the lojix-deployed closure (a real
+            # generation becomes the lojix-deployed closure through the current
+            # Host/SetBootProfile/ResolveAndRecord deploy interface (a real
             # nixos-system, never the bare .drv). Psyche-scoped to
             # generation-activation (NOT the full BootOnce reboot). See
             # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,

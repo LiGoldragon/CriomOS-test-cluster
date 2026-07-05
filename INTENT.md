@@ -64,14 +64,16 @@ hermetic, repeatable 2-node `runNixOSTest` — proving the *machinery*, not the
 runs the FIXED lojix daemon (lojix main, the `<drv>^*` output-selector fix that
 the live e2e caught) configured the real way (`lojix-write-configuration` →
 rkyv → `lojix-daemon`, both sockets at production modes); a **target** node is
-the projected guest (mercury). The deployer submits a `FullOs` `Boot` Deploy of
-the target's OWN projected config — `build_attribute` = the deploy flake's
-`systemToplevel`, cluster-data-generated, never hand-written — and the test
-asserts the target's `/nix/var/nix/profiles/system` becomes the lojix-deployed
-closure (a real `nixos-system-<node>`, the `<drv>^*` fix held, never the bare
-`.drv`), corroborated by the daemon's durable terminal deploy-job record read
-via the ordinary CLI. Psyche-scoped to GENERATION-ACTIVATION, not the full
-BootOnce reboot (the deferred q35 part).
+the projected guest (mercury). The deployer submits the current
+`Deploy (Host ...)` request for the target's OWN projected config —
+`HostComposition = BaseHost`, `HostDeployAction = SetBootProfile`,
+`SourceRevisionPolicy = ResolveAndRecord`, and `build_attribute` = the deploy
+flake's `systemToplevel`, cluster-data-generated, never hand-written — and the
+test asserts the target's `/nix/var/nix/profiles/system` becomes the
+lojix-deployed closure (a real `nixos-system-<node>`, the `<drv>^*` fix held,
+never the bare `.drv`), corroborated by the daemon's durable current
+`ByNode` generation record read via the ordinary CLI. Psyche-scoped to
+GENERATION-ACTIVATION, not the full BootOnce reboot (the deferred q35 part).
 
 The integration walls are unblocked IN the test (Spirit [dqg3]), never papered
 over: the daemon's `nix eval`/`nix build` run fully OFFLINE (the deploy flake
