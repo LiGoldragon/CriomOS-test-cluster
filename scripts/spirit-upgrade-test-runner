@@ -1,85 +1,84 @@
 set -euo pipefail
 
-# Operator end-to-end path for the Spirit nspawn upgrade acceptance gate.
+# Operator end-to-end path for the Spirit nspawn migration/configuration smoke.
 # Runs inside a criomos-nspawn container created by
-# nspawn-spirit-upgrade-on-prometheus.
-#
-# Sequence:
-#   1. Start persona-spirit-daemon v0.1.0 with an explicit NOTA config.
-#   2. Write N synthetic records through the v0.1.0 spirit CLI.
-#   3. Stop v0.1.0 so the redb file is closed.
-#   4. Run upgrade-spirit-sandbox-test against the copied database path.
-#   5. Assert the migrated/readable counts match N.
+# nspawn-spirit-upgrade-on-prometheus. The app name is historical; the current
+# runner proves the schema-derived Spirit stack that ships in this flake:
+#   1. Run spirit-migrate-store against an absent Domain::All .sema store.
+#   2. Write a binary daemon configuration with ConfigurationWriteRequest.
+#   3. Start spirit-daemon against the .sema store and meta socket.
+#   4. Import synthetic Domain::All records through the owner-only meta socket.
+#   5. Observe the records through a DomainScope::All query and prove a rerun of
+#      spirit-migrate-store reports the current store as Current.
 
 RECORD_COUNT="${1:-10}"
-WORK="${TMPDIR:-/tmp}/spirit-upgrade-test"
+WORK="${TMPDIR:-/tmp}/spirit-domain-all-nspawn-test"
 rm -rf "$WORK"
 mkdir -p "$WORK"
 
-ORDINARY_SOCK="$WORK/ordinary.sock"
-OWNER_SOCK="$WORK/owner.sock"
-DB_PATH="$WORK/persona-spirit-v010.redb"
-SOCKET_MODE=384
+ORDINARY_SOCK="$WORK/spirit.sock"
+META_SOCK="$WORK/meta-spirit.sock"
+STORE_PATH="$WORK/spirit.sema"
+CONFIG_PATH="$WORK/spirit.config.rkyv"
 
-export PERSONA_SPIRIT_SOCKET="$ORDINARY_SOCK"
-export PERSONA_SPIRIT_OWNER_SOCKET="$OWNER_SOCK"
+export SPIRIT_SOCKET="$ORDINARY_SOCK"
+export SPIRIT_META_SOCKET="$META_SOCK"
 
 printf '[runner] container hostname: %s\n' "$(hostname)"
 printf '[runner] record count: %s\n' "$RECORD_COUNT"
 printf '[runner] work directory: %s\n' "$WORK"
-printf '[runner] v0.1.0 redb path: %s\n' "$DB_PATH"
+printf '[runner] Domain::All sema store path: %s\n' "$STORE_PATH"
 
-DAEMON_CONFIG_V010="(\"$ORDINARY_SOCK\" \"$OWNER_SOCK\" \"$DB_PATH\" $SOCKET_MODE None)"
-printf '[runner] daemon config: %s\n' "$DAEMON_CONFIG_V010"
+INITIAL_MIGRATION_OUTPUT="$(spirit-migrate-store "($STORE_PATH)")"
+printf '[runner] initial migration output: %s\n' "$INITIAL_MIGRATION_OUTPUT"
+printf '%s' "$INITIAL_MIGRATION_OUTPUT" | grep -q 'Current'
 
-persona-spirit-daemon-v010 "$DAEMON_CONFIG_V010" >"$WORK/daemon-v010.log" 2>&1 &
+spirit-write-configuration \
+  "(ConfigurationWriteRequest ($ORDINARY_SOCK (Some $META_SOCK) $STORE_PATH None Observing None $CONFIG_PATH))" \
+  >"$WORK/configuration-written.nota"
+test -s "$CONFIG_PATH"
+printf '[runner] wrote daemon config: %s\n' "$CONFIG_PATH"
+
+spirit-daemon "$CONFIG_PATH" >"$WORK/spirit-daemon.log" 2>&1 &
 DAEMON_PID=$!
 trap 'kill "$DAEMON_PID" 2>/dev/null || true' EXIT
 
-for _ in $(seq 1 60); do
-  if [ -S "$ORDINARY_SOCK" ]; then
+for _ in $(seq 1 100); do
+  if [ -S "$ORDINARY_SOCK" ] && [ -S "$META_SOCK" ]; then
     break
   fi
   sleep 0.1
 done
 
-if [ ! -S "$ORDINARY_SOCK" ]; then
-  printf '[runner] daemon socket %s never appeared\n' "$ORDINARY_SOCK" >&2
+if [ ! -S "$ORDINARY_SOCK" ] || [ ! -S "$META_SOCK" ]; then
+  printf '[runner] daemon sockets never appeared\n' >&2
   printf '[runner] daemon log:\n' >&2
-  cat "$WORK/daemon-v010.log" >&2 || true
+  cat "$WORK/spirit-daemon.log" >&2 || true
   exit 1
 fi
 
-printf '[runner] v0.1.0 daemon up, writing %s records\n' "$RECORD_COUNT"
+printf '[runner] spirit daemon up with ordinary=%s meta=%s\n' "$ORDINARY_SOCK" "$META_SOCK"
 
 for i in $(seq 1 "$RECORD_COUNT"); do
-  spirit-v010 \
-    "(Record (operator-spirit-nspawn-test Decision \"synthetic test record $i\" \"operator nspawn pilot context $i\" Maximum \"verbatim synthetic quote $i\"))" \
-    >/dev/null
+  meta-spirit \
+    "(Import [(nspawn-domain-all-$i ([All] Decision [Domain All nspawn migration smoke record $i] High Low Zero []))])" \
+    >"$WORK/import-$i.nota"
+  grep -q 'Imported' "$WORK/import-$i.nota"
 done
 
-spirit-v010 '(Observe (Records (None None SummaryOnly)))' >"$WORK/pre-upgrade.nota" 2>"$WORK/pre-upgrade.err" || true
+OBSERVE_OUTPUT="$(spirit '(Observe ((Full [All]) Any Any Any (Some Decision) (Exact Zero) (AtLeastCertainty Minimum) Any))')"
+printf '[runner] observe Domain::All output:\n%s\n' "$OBSERVE_OUTPUT" >"$WORK/observe-domain-all.log"
+for i in $(seq 1 "$RECORD_COUNT"); do
+  printf '%s' "$OBSERVE_OUTPUT" | grep -q "Domain All nspawn migration smoke record $i"
+done
+printf '[runner] DomainScope::All observe returned all %s imported records\n' "$RECORD_COUNT"
 
 kill "$DAEMON_PID"
 wait "$DAEMON_PID" 2>/dev/null || true
 trap - EXIT
 
-if [ ! -f "$DB_PATH" ]; then
-  printf '[runner] no v0.1.0 redb at %s\n' "$DB_PATH" >&2
-  find "$WORK" -type f >&2 || true
-  exit 1
-fi
+FINAL_MIGRATION_OUTPUT="$(spirit-migrate-store "($STORE_PATH)")"
+printf '[runner] final migration output: %s\n' "$FINAL_MIGRATION_OUTPUT"
+printf '%s' "$FINAL_MIGRATION_OUTPUT" | grep -q 'Current'
 
-printf '[runner] v0.1.0 redb: %s (%s bytes)\n' "$DB_PATH" "$(stat -c %s "$DB_PATH")"
-
-UPGRADE_OUTPUT="$(upgrade-spirit-sandbox-test "$DB_PATH")"
-printf '[runner] upgrade output:\n%s\n' "$UPGRADE_OUTPUT"
-
-EXPECTED="(SandboxUpgradeSucceeded $RECORD_COUNT $RECORD_COUNT "
-if printf '%s' "$UPGRADE_OUTPUT" | grep -qF "$EXPECTED"; then
-  printf '[runner] spirit-nspawn upgrade test passed with %s records\n' "$RECORD_COUNT"
-  exit 0
-fi
-
-printf '[runner] spirit-nspawn upgrade test failed; expected count prefix %s in output\n' "$EXPECTED" >&2
-exit 1
+printf '[runner] spirit Domain::All nspawn migration/config smoke passed with %s records\n' "$RECORD_COUNT"

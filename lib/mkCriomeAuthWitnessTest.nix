@@ -13,9 +13,10 @@
 # THE CHAIN, AS REAL CODE (see CriomosImplementer evidence): spirit ships head
 # DIRECTLY to a mirror and the router only fans out a typed reference, so the
 # recorded "spirit -> criome -> router -> mirror" is composed here from the REAL
-# mechanisms: (1) a real Spirit record is seeded on a guardian-compiled,
-# no-agent (fail-closed) spirit daemon via owner-only meta Import, and its REAL
-# versioned-log head is read back via the owner-only meta op ObserveHead; (2) the
+# mechanisms: (1) real Spirit records are written to the default no-guardian
+# Domain::All spirit daemon via owner-only meta Import and ordinary Record, and
+# the current REAL versioned-log head is read back via the owner-only meta op
+# ObserveHead; (2) the
 # router-forward-witness sender attests the forward of a signal-mirror Append
 # (carrying that real head) through a REAL criome daemon, stamping Host(node-a);
 # (3) it sends one signal-router ForwardMessage over TCP to node-b's REAL
@@ -59,7 +60,7 @@ let
   routerTcpPort = 7440;
 
   # The REAL record entry body (rkyv VersionedCommitLogEntry), sourced from the
-  # seeded spirit head via the owner-only meta op ObserveHeadObject and decoded
+  # current spirit head via the owner-only meta op ObserveHeadObject and decoded
   # to this file on each node, so every forward carries the genuine
   # content-addressed body — not a placeholder.
   witnessBodyPath = "/run/witness/entry.body";
@@ -84,10 +85,12 @@ let
   mirrorStore = "/var/lib/mirror/mirror.sema";
   mirrorConfig = "/run/mirror/mirror-daemon.rkyv";
 
-  # spirit (node-a only) — guardian-compiled, no-agent (fail-closed).
+  # spirit (node-a only) — the default no-guardian Domain::All package. The
+  # generation stores through sema-engine, so a fresh witness store is a `.sema`
+  # file and needs no migration before daemon startup.
   spiritWorking = "/run/spirit/spirit.sock";
   spiritMeta = "/run/spirit/spirit.sock.meta";
-  spiritStore = "/var/lib/spirit/spirit.db";
+  spiritStore = "/var/lib/spirit/spirit.sema";
   spiritConfig = "/run/spirit/spirit-config.rkyv";
 
   # criome daemon as a hermetic root systemd service signing as Host(<identity>).
@@ -188,16 +191,15 @@ let
     };
   };
 
-  # spirit daemon: guardian-compiled (agent-guardian build) with NO agent
-  # configured (guardian_agent_configuration = None) ⇒ fail-closed on ordinary
-  # writes; owner-only meta Import is the seed path.
+  # spirit daemon: the test consumes the flake's default no-guardian package,
+  # so ordinary writes are accepted and owner-only meta Import remains available.
   spiritService = {
     systemd.tmpfiles.rules = [
       "d /run/spirit 0755 root root -"
       "d /var/lib/spirit 0700 root root -"
     ];
     systemd.services.spirit = {
-      description = "spirit daemon (guardian-compiled, no agent — fail-closed)";
+      description = "spirit daemon (default no-guardian Domain::All package)";
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Type = "simple";
@@ -232,18 +234,17 @@ let
     ];
   };
 
-  # The record seeded into spirit. The head forwarded through the router is the
-  # store's REAL versioned-log head, read back from the seeded daemon via the
-  # owner-only meta op `ObserveHead` (spirit main) — NOT a
-  # synthetic hash of the identifier/description. So the head criome attests and
-  # the mirror durably lands is the store's content-addressed head over the imported record.
+  # The record imported into spirit. The head forwarded through the router is
+  # the store's REAL current versioned-log head, read back from the daemon via
+  # the owner-only meta op `ObserveHead` — NOT a synthetic hash of the
+  # identifier/description. The ordinary write below advances the head, so the
+  # head criome attests and the mirror durably lands is the store's latest
+  # content-addressed head.
   recordIdentifier = "witness-record-1";
   recordDescription = "criome auth witness record";
   # The record identifier is a bare-eligible string (no brackets — redundant
-  # brackets around a canonical atom are rejected). Referents are empty: the
-  # owner-only meta Import bypasses the guardian but NOT the store's referent
-  # canonicalization, so a referent must already be registered; an empty vector
-  # imports cleanly and the forwarded head derives from identifier+description.
+  # brackets around a canonical atom are rejected). Referents are empty, so meta
+  # Import can write the record without pre-registering a referent.
   importNota = "(Import [(${recordIdentifier} ([(Technology (Software (Programming CodeGeneration)))] Decision [${recordDescription}] High Low Zero []))])";
 in
 pkgs.testers.runNixOSTest {
@@ -312,8 +313,9 @@ pkgs.testers.runNixOSTest {
     print("L2 OK: criome+router+spirit (node-a) and criome+router+mirror (node-b) active; distinct identities")
 
     # ===================================================================
-    # L3 — a real Spirit record seeded via owner-only meta Import on the
-    # guardian-compiled, no-agent (fail-closed) spirit daemon.
+    # L3 — real Spirit writes on the default no-guardian Domain::All daemon.
+    # Meta Import proves the owner-only seed path; the ordinary Record proves the
+    # packaged daemon's current no-guardian configuration accepts working writes.
     # ===================================================================
     imported = node_a.succeed(
         "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '${importNota}'"
@@ -321,29 +323,25 @@ pkgs.testers.runNixOSTest {
     assert "Imported" in imported, f"meta Import must seed the record: {imported!r}"
     print("L3 OK: meta Import receipt =", imported)
 
-    # fail-closed witness: the SAME daemon refuses an ordinary working-socket
-    # Record (guardian required, no agent) — ordinary writes do not land.
-    blocked = node_a.succeed(
+    ordinary = node_a.succeed(
         "SPIRIT_SOCKET=${spiritWorking} ${spiritPackage}/bin/spirit "
-        "'(Record (([(Technology (Software (Programming CodeGeneration)))] Decision [blocked ordinary write] High Low Zero [spirit]) ([([blocked ordinary write probe] None)] [fail-closed probe])))' "
-        "2>&1 || true"
+        "'(Record (([All] Decision [ordinary Domain All witness record] High Low Zero [spirit]) ([([ordinary Domain All witness probe] None)] [no guardian default package probe])))'"
     ).strip()
-    assert "IntentRecorded" not in blocked, f"ordinary Record must NOT land (fail-closed): {blocked!r}"
-    assert "RecordAccepted" not in blocked, f"ordinary Record must NOT be accepted (fail-closed): {blocked!r}"
-    assert "HarnessUnavailable" in blocked, f"the fail-closed refusal must be a guardian rejection (HarnessUnavailable), not a parse or transport error: {blocked!r}"
-    print("L3 OK: ordinary working-socket Record refused fail-closed (guardian HarnessUnavailable) =", blocked)
+    assert "RecordAccepted" in ordinary, f"ordinary Record must land on the default no-guardian daemon: {ordinary!r}"
+    print("L3 OK: ordinary working-socket Record accepted by the default no-guardian daemon =", ordinary)
 
     # L3 — the forwarded head is the spirit store's REAL versioned-log head, read
-    # back from the seeded daemon over the owner-only meta op `ObserveHead`
-    # (spirit criome-auth-witness). It is `EntryDigest::to_string()` of the
-    # store's current head — spirit's own content-addressing, NOT a synthetic
-    # hash of the identifier/description. Before the Import the head is None; after
-    # it the head is `(Some <64-hex>)`, the value criome attests and mirror lands.
+    # back from the daemon over the owner-only meta op `ObserveHead` (spirit
+    # criome-auth-witness). It is `EntryDigest::to_string()` of the store's
+    # current head — spirit's own content-addressing, NOT a synthetic hash of the
+    # identifier/description. The ordinary write above advances the head after the
+    # Import; the resulting `(Some <64-hex>)` value is what criome attests and
+    # mirror lands.
     head_reply = node_a.succeed(
         "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '(ObserveHead)'"
     ).strip()
     head_match = re.search(r"\(Some ([0-9a-f]{64})\)", head_reply)
-    assert head_match, f"ObserveHead must report the real seeded head: {head_reply!r}"
+    assert head_match, f"ObserveHead must report the real current head: {head_reply!r}"
     head = head_match.group(1)
     print("L3 OK: real spirit versioned-log head (ObserveHead) =", head)
 
@@ -353,7 +351,7 @@ pkgs.testers.runNixOSTest {
     # a binary file on BOTH nodes so every forward (the two negatives and the
     # positive) carries the identical genuine body — keeping the registered key
     # the ONLY difference between refuse and accept. The body is consistent with
-    # `head` by construction (both from the same seeded entry): re-deriving the
+    # `head` by construction (both from the same current entry): re-deriving the
     # body's content address reproduces `head`.
     object_reply = node_a.succeed(
         "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '(ObserveHeadObject)'"
@@ -575,8 +573,8 @@ pkgs.testers.runNixOSTest {
     )
     print("L5-body OK: the REAL landed body re-hashes IN THE VM to the real spirit head", head)
 
-    print("WITNESS GREEN (full chain): a real Spirit record was seeded on a fail-closed "
-          "guardian daemon (meta Import; ordinary Record refused HarnessUnavailable); its REAL "
+    print("WITNESS GREEN (full chain): real Spirit records were written on the default "
+          "no-guardian Domain::All daemon (meta Import plus ordinary RecordAccepted); the current REAL "
           "versioned-log head (ObserveHead) AND head ENTRY BODY (ObserveHeadObject) were attested "
           "by criome A and forwarded through the persona router to node-b. node-b's criome REFUSED "
           "the unregistered signer (negative-1, UnknownSigner -> AttestationInvalid) and a "

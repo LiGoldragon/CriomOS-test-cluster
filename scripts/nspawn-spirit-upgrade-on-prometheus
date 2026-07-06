@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Operator e2e runner for the Spirit nspawn upgrade test.
+# Operator e2e runner for the Spirit nspawn migration/configuration smoke.
 # Pushes main, asks Prometheus to build this flake's
 # spirit-nspawn-toplevel, boots it with criomos-nspawn, runs the
-# in-container upgrade runner, then removes the transient machine.
+# in-container Domain::All migration/config runner, then removes the transient
+# machine. The file/app name is historical.
 
 host="${1:-prometheus.goldragon.criome}"
 record_count="${SPIRIT_NSPAWN_RECORD_COUNT:-10}"
@@ -60,5 +61,5 @@ fi
 printf 'invoking spirit-upgrade-test-runner inside container with N=%s\n' "$record_count"
 criomos-nspawn shell "$machine" spirit-upgrade-test-runner "$record_count"
 
-printf 'spirit nspawn upgrade test passed\n'
+printf 'spirit nspawn migration/config smoke passed\n'
 REMOTE

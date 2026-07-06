@@ -7,6 +7,7 @@
     criomos.url = "github:LiGoldragon/CriomOS/main";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
+    criomos.inputs.criomos-home.inputs.spirit.url = "github:LiGoldragon/spirit/trueschema";
 
     criomos-lib.url = "github:LiGoldragon/CriomOS-lib";
 
@@ -27,11 +28,6 @@
     # it — the daemon is a self-contained release artifact.
     lojix.url = "github:LiGoldragon/lojix/main";
 
-    persona-spirit.url = "github:LiGoldragon/persona-spirit";
-    persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
-
-    upgrade.url = "github:LiGoldragon/upgrade";
-
     # The criome-auth witness stack, pinned to the audit-gated witness/integration
     # branches so the whole two-VM boot resolves ONE consistent wire generation
     # (signal-criome 0.6.0 / signal-frame 0.3.0). Consumed only by the
@@ -39,10 +35,10 @@
     criome.url = "github:LiGoldragon/criome";
     router.url = "github:LiGoldragon/router";
     mirror.url = "github:LiGoldragon/mirror";
-    # spirit main carries the owner-only meta `ObserveHead` + `ObserveHeadObject`
-    # ops (the REAL versioned-log head + rkyv body the witness forwards), with
-    # meta-signal-spirit 0.4.0 landed on main.
-    spirit.url = "github:LiGoldragon/spirit";
+    # spirit trueschema carries Domain::All, SPIRIT_SCHEMA_VERSION 13, and the
+    # owner-only meta `ObserveHead` + `ObserveHeadObject` ops (the REAL
+    # versioned-log head + rkyv body the witness forwards).
+    spirit.url = "github:LiGoldragon/spirit/trueschema";
   };
 
   outputs =
@@ -370,30 +366,15 @@
               ++ extraModules;
             }).config.system.build.toplevel;
 
-          spirit010 = inputs.persona-spirit-v010.packages.${system};
-          spirit011 = inputs.persona-spirit.packages.${system};
-          upgradePackage = inputs.upgrade.packages.${system}.default;
-
-          spiritV010Wrappers = [
-            (pkgs.writeShellScriptBin "spirit-v010" ''
-              exec ${spirit010.spirit}/bin/spirit "$@"
-            '')
-            (pkgs.writeShellScriptBin "persona-spirit-daemon-v010" ''
-              exec ${spirit010.persona-spirit-daemon}/bin/persona-spirit-daemon "$@"
-            '')
-          ];
+          currentSpirit = inputs.spirit.packages.${system}.default;
 
           spiritUpgradeTestRunner = pkgs.writeShellApplication {
             name = "spirit-upgrade-test-runner";
             runtimeInputs = [
               pkgs.coreutils
-              pkgs.findutils
               pkgs.gnugrep
-              spirit011.spirit
-              spirit011.persona-spirit-daemon
-              upgradePackage
-            ]
-            ++ spiritV010Wrappers;
+              currentSpirit
+            ];
             text = builtins.readFile ./scripts/spirit-upgrade-test-runner;
           };
 
@@ -424,12 +405,9 @@
                     system.stateVersion = "25.05";
 
                     environment.systemPackages = [
-                      spirit011.spirit
-                      spirit011.persona-spirit-daemon
-                      upgradePackage
+                      currentSpirit
                       spiritUpgradeTestRunner
-                    ]
-                    ++ spiritV010Wrappers;
+                    ];
                   }
                 )
               ];
