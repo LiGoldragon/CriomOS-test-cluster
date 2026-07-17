@@ -1,6 +1,12 @@
 {
   "cluster": {
     "name": "fieldlab",
+    "domainConfiguration": {
+      "internalSuffix": "criome",
+      "publicClusterDomains": [
+        "fieldlab.criome.net"
+      ]
+    },
     "tailnetBaseDomain": "tailnet.fieldlab.criome",
     "trustedBuildPubKeys": [
       "atlas.fieldlab.criome:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
