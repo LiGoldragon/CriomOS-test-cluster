@@ -18,14 +18,12 @@
     horizon.url = "github:LiGoldragon/horizon-rs/main";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
-    # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*
-    # output-selector fix, commit efbc5ea, that the live e2e caught: build
-    # must realise the system, never copy/activate the bare .drv). The C6
-    # smoke test builds the FIXED daemon + the meta-lojix / lojix / write-
-    # configuration CLIs into the deployer node from this input. lojix pins
-    # its own nixpkgs (its crane/fenix toolchain); we do NOT follow ours onto
-    # it — the daemon is a self-contained release artifact.
-    lojix.url = "github:LiGoldragon/lojix/main";
+    # The Lojix release-safety candidate is consumed through its published
+    # review branch, not a command-line override. The C6 smoke builds its
+    # daemon and CLIs from exactly this locked candidate; its own nixpkgs,
+    # crane, and fenix toolchain stay self-contained rather than following
+    # this fixture's nixpkgs.
+    lojix.url = "github:LiGoldragon/lojix/deployment-compatibility-preflight";
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";

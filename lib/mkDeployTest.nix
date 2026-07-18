@@ -35,21 +35,24 @@
 #       it to its role).
 #
 # THE DEPLOY + ASSERTION:
-#   The deployer submits a FullOs `Boot` Deploy of the target's config
-#   (build_attribute = the deploy flake's `systemToplevel`, which IS the
-#   target's projected system — cluster-data-generated, not hand-written). The
-#   daemon runs `nix-env --set <closure> && switch-to-configuration boot` on the
-#   target: this SETS the system profile generation (the C6 ground truth) and
-#   stages the config for the next boot WITHOUT tearing down the running
-#   userspace (a `switch` would restart CriomOS's network services, which block
-#   on the unreachable network in the hermetic runner). The test then ASSERTS,
-#   on the target, that `/nix/var/nix/profiles/system` resolves to the
-#   lojix-deployed closure (`nixos-system-<node>-...`) AND that it is a REAL
-#   nixos-system directory (has /bin/switch-to-configuration + /init + /activate)
-#   — the <drv>^* fix held: a .drv would have no such tree. It also reads the
-#   daemon's durable terminal deploy-job record via the ORDINARY `lojix Query
-#   (ByNode ...)` CLI (report 46/48 approach: observe the silent daemon's
-#   durable state).
+#   The deployer submits the current `Deploy (Host ...)` request for the target's
+#   config: HostComposition = BaseHost, HostDeployAction = SetBootProfile,
+#   SourceRevisionPolicy = ResolveAndRecord, build_attribute = the deploy
+#   flake's `systemToplevel`, which IS the target's projected system —
+#   cluster-data-generated, not hand-written. The daemon returns
+#   `DeployAccepted` as admission evidence, then runs
+#   `nix-env --set <closure> && switch-to-configuration boot` on the target:
+#   this SETS the system profile generation (the C6 ground truth) and stages the
+#   config for the next boot WITHOUT tearing down the running userspace (a
+#   `switch` would restart CriomOS's network services, which block on the
+#   unreachable network in the hermetic runner). The test then ASSERTS, on the
+#   target, that `/nix/var/nix/profiles/system` resolves to the lojix-deployed
+#   closure (`nixos-system-<node>-...`) AND that it is a REAL nixos-system
+#   directory (has /bin/switch-to-configuration + /init + /activate) — the
+#   <drv>^* fix held: a .drv would have no such tree. It also reads the daemon's
+#   durable terminal live-generation record via the ORDINARY `lojix Query
+#   (ByNode ...)` CLI and asserts the current vocabulary:
+#   BaseHost BootProfile BootPending plus the recorded source-revision policy.
 #
 # THE INTEGRATION RISKS, HEAD-ON (Spirit [dqg3] — unblock the blocker IN the
 # test, do not just report "blocked"):
@@ -68,7 +71,8 @@
 #   4. SILENT daemon: the daemon emits no progress, so the test observes the
 #      deploy's durable effect — it polls the TARGET's own
 #      /nix/var/nix/profiles/system link until it becomes the deployed closure,
-#      then reads the daemon's terminal deploy-job record via the ordinary CLI.
+#      then reads the daemon's terminal live-generation record via the ordinary
+#      CLI.
 
 {
   inputs,
@@ -154,9 +158,10 @@ let
 
   # The UEFI test-substrate (C3) — writable store, require-sigs off, NSS / root
   # shell prebakes, sshd keys-only + the deploy key, EFI label alignment. The
-  # daemon's Boot activation runs `nix-env --set` (sets the generation — the C6
-  # ground truth) then `switch-to-configuration boot` (no-op bootloader install
-  # on this throwaway target) + a no-op `bootctl` EFI reconcile, all GREEN.
+  # daemon's SetBootProfile activation runs `nix-env --set` (sets the generation
+  # — the C6 ground truth) then `switch-to-configuration boot` (no-op bootloader
+  # install on this throwaway target) + a no-op `bootctl` EFI reconcile, all
+  # GREEN.
   substrateProfile = import "${inputs.criomos}/modules/nixos/test-substrate.nix" {
     substrate = "uefi";
     deployKey = deployPublicKey;
@@ -183,6 +188,29 @@ let
         inputs.criomos.inputs.sops-nix.nixosModules.sops
         substrateProfile.guestModule
       ];
+
+      # Current lojix evaluates and realizes remote-node deployments in the
+      # target node's own store. The target therefore carries the same offline
+      # deploy-flake source/eval closure as the deployer, so `nix eval --store
+      # ssh-ng://root@target ...` never needs the network.
+      system.extraDependencies = [
+        deployFlakeSource
+        deployedToplevel
+      ]
+      ++ deployFlake.evalSources;
+
+      nix.settings = {
+        substituters = lib.mkForce [ ];
+        require-sigs = lib.mkForce false;
+        builders = lib.mkForce "";
+        tarball-ttl = 999999999;
+        use-registries = false;
+        flake-registry = "";
+        experimental-features = [
+          "nix-command"
+          "flakes"
+        ];
+      };
 
       # size from the projected machine facts.
       virtualisation = {
@@ -288,6 +316,16 @@ let
         ];
       };
 
+      # The deployer is synthetic test infrastructure, not a projected CriomOS
+      # node. Current lojix remote deploys run Nix eval/build orchestration from
+      # the deployer process against the target store; the NixOS-test default
+      # 1 GiB guest panics under that current path before durable generation
+      # evidence can be observed.
+      virtualisation = {
+        cores = 2;
+        memorySize = 3072;
+      };
+
       # The deploy private key on disk for the daemon's ssh / nix-copy.
       environment.etc."lojix-c6/deploy_key" = {
         source = "${deployKeyPair}/deploy_key";
@@ -372,7 +410,7 @@ let
           mkdir -p "$XDG_CACHE_HOME"
           nix flake archive --offline "path:${deployFlakeSource}" >/dev/null 2>&1 || true
           ${lojixClis}/bin/lojix-write-configuration \
-            "(ConfigurationWriteRequest (/run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix (${clusterName} ${hostNode} Hermetic github:LiGoldragon/CriomOS-test-cluster /dev/null) /run/lojix/startup.rkyv))"
+            "(ConfigurationWriteRequest (/run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix deployer NoTestDefaults /run/lojix/startup.rkyv))"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -448,32 +486,41 @@ assertModel (
           "root@${criomeDomainName} true"
       )
 
+      # Current lojix evaluates/builds remote-node deploys against the target
+      # store. Prime that target store with the locked deploy flake and its input
+      # closure before admission, keeping the daemon's production eval command
+      # unchanged and offline.
+      ${vmNode}.succeed(
+          "export HOME=/root XDG_CACHE_HOME=/root/.cache; "
+          "timeout 120s nix flake archive --offline "
+          "path:${deployFlakeSource}"
+      )
+
       # baseline generation the target booted (the deploy must ADVANCE it).
       base_system = ${vmNode}.succeed("readlink -f /run/current-system").strip()
 
       # --- submit the REAL production deploy over the OWNER socket -------------
-      # FullOs Switch of the TARGET's own projected config; build_attribute =
-      # `systemToplevel` (the deploy flake's output = the target's projected
+      # Current Host deploy of the TARGET's own projected config; build_attribute
+      # = `systemToplevel` (the deploy flake's output = the target's projected
       # system, cluster-data-generated). The daemon mints the deployment id and
       # runs the pipeline autonomously (build -> copy -> activate); the client
-      # returns immediately (S4b decoupling).
-      # `Boot` (not `Switch`): the daemon runs `nix-env --set <closure> &&
-      # switch-to-configuration BOOT`. `boot` sets the system profile generation
-      # (the C6 ground truth) and stages the new config for the NEXT boot WITHOUT
-      # restarting the running system's services — so it does not disrupt the
-      # live network/sshd of the running target mid-activation (which a `switch`
-      # would, on a network-service-heavy CriomOS node in a hermetic VM where
-      # tailscale/yggdrasil block on the unreachable network). Generation-
-      # activation scope: the profile becomes the deployed closure; the running
-      # userspace is not torn down.
+      # returns immediately with DeployAccepted admission evidence (S4b
+      # decoupling). `SetBootProfile`: the daemon runs
+      # `nix-env --set <closure> && switch-to-configuration boot`. `boot` sets
+      # the system profile generation (the C6 ground truth) and stages the new
+      # config for the NEXT boot WITHOUT restarting the running system's services
+      # — so it does not disrupt the live network/sshd of the running target
+      # mid-activation. Generation-activation scope: the profile becomes the
+      # deployed closure; the running userspace is not torn down.
       deploy_reply = deployer.succeed(
           "LOJIX_OWNER_SOCKET=/run/lojix/owner.sock "
           "${lojixClis}/bin/meta-lojix "
-          "'(Deploy (System (${cluster} ${vmNode} FullOs /dev/null "
-          "path:${deployFlakeSource} Boot None [] (Some ${deployFlake.buildAttribute}))))'"
+          "'(Deploy (Host (${cluster} ${vmNode} BaseHost /dev/null "
+          "path:${deployFlakeSource} SetBootProfile ResolveAndRecord None [] "
+          "(Some ${deployFlake.buildAttribute}))))'"
       )
       print("deploy reply:", deploy_reply)
-      assert "Deployed" in deploy_reply, f"deploy not accepted: {deploy_reply}"
+      assert "DeployAccepted" in deploy_reply, f"deploy not accepted: {deploy_reply}"
 
       # read the daemon's durable deploy state via the ORDINARY CLI (Query ByNode)
       # — used for observability of the silent deploy (the generation-activation
@@ -518,22 +565,20 @@ assertModel (
       # it ADVANCED past the booted base (a real deploy, not a no-op).
       assert profile_target != base_system, "generation did not advance past the base"
 
-      # --- ASSERT: the daemon's DURABLE deploy-job record corroborates (Spirit
+      # --- ASSERT: the daemon's DURABLE live-generation record corroborates (Spirit
       # [vcin]: a print is not proof — assert the real durable record) -----------
-      # The ordinary `(Query (ByNode ...))` reply renders the schema-owned
-      # GenerationListing:
+      # The ordinary `(Query (ByNode ...))` reply renders the current
+      # schema-owned GenerationListing:
       #   (Queried ([ (Generation <genId> <depId> <cluster> <node>
-      #                <kind> <activationKind> <slot> <closurePath>) ... ]
+      #                <artifact> <activationEffect> <slot> <closurePath>
+      #                (Some (SourceRevisionRecord ...))) ... ]
       #             (DatabaseMarker <seq> <digest>)))
       # The daemon is silent and the live-set write commits after the target's
-      # profile flip, so poll the durable Query until the node's record carries the
-      # deployed closure, then assert the three load-bearing facts: the node name,
-      # the terminal generation SLOT, and the deployed ClosurePath (the SAME
-      # closure the profile assertion checked). The durable record for this deploy
-      # is `(<gen> <dep> ${cluster} ${vmNode} FullOs Boot Current <closure>)` —
-      # the live generation lands in the `Current` slot (the terminal deployed
-      # state the query exposes), so `Current` is the durable state this proves.
-      expected_slot = "Current"
+      # profile flip, so poll the durable Query until the node's record carries
+      # the deployed closure, then assert the load-bearing current facts: node
+      # name, Host artifact, activation effect, terminal slot, ClosurePath, and
+      # source-revision policy.
+      expected_slot = "BootPending"
       deployer.wait_until_succeeds(
           "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
           f"${lojixClis}/bin/lojix '(Query (ByNode (${cluster} ${vmNode} None)))' "
@@ -542,11 +587,12 @@ assertModel (
       )
       final_query = query_node()
       print("durable deploy state:", final_query)
-      # Assert the schema-owned positional Generation fragment — node + kind +
-      # activationKind + terminal slot together (`${vmNode} FullOs Boot Current`),
-      # not a loose lone-`Current` substring that could match elsewhere. This ties
-      # the deployed node to its terminal generation slot in one schema shape.
-      node_generation = "${vmNode} FullOs Boot " + expected_slot
+      # Assert the schema-owned positional Generation fragment — node + artifact
+      # + activationEffect + terminal slot together
+      # (`${vmNode} BaseHost BootProfile BootPending`), not a loose lone-slot
+      # substring that could match elsewhere. This ties the deployed node to its
+      # terminal generation slot in one schema shape.
+      node_generation = "${vmNode} BaseHost BootProfile " + expected_slot
       assert node_generation in final_query, (
           f"durable Query reply does not record {node_generation!r}: {final_query}"
       )
@@ -555,6 +601,9 @@ assertModel (
       # agree.
       assert expected_closure in final_query, (
           f"durable Query reply does not record the deployed closure {expected_closure}: {final_query}"
+      )
+      assert "ResolveAndRecord" in final_query, (
+          f"durable Query reply does not record the source revision policy: {final_query}"
       )
 
       # --- ASSERT: the activated artifact is a REAL nixos-system (the <drv>^* fix
