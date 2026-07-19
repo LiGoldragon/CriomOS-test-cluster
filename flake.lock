@@ -1914,16 +1914,16 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1784247791,
-        "narHash": "sha256-28oc+m+kgnINvZMZtUBj2ixV9Fn1gqqNJPlmTUPP9JU=",
+        "lastModified": 1784420710,
+        "narHash": "sha256-m5zFNYGlaDxLgfa2+dhuNfDAuo62Yv81x+rY0LKkS0Q=",
         "owner": "LiGoldragon",
         "repo": "lojix",
-        "rev": "5441998d8abf215996cc83ea3657342a2510200c",
+        "rev": "1dbcab6563fef1ef3a85f64ef5fcfc2a5b9d0ca9",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
-        "ref": "deployment-compatibility-preflight",
+        "ref": "certification-blocker-repair",
         "repo": "lojix",
         "type": "github"
       }
@@ -2497,11 +2497,11 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1779633804,
-        "narHash": "sha256-5FuRU6g+FELsnK3JIawWAT8Z1RZGbo7Kk5+rXvVDjTs=",
+        "lastModified": 1783443857,
+        "narHash": "sha256-+B/JY5sLHeYdEoDnwCzH7KxVfPrZ3L6vDYHvj+KZWdM=",
         "owner": "LiGoldragon",
         "repo": "persona-spirit",
-        "rev": "94b1d0d7a80bc588908f62fedc5b76652e6dbf23",
+        "rev": "ed0f5c488dc82430827fe537bfc5d9779d7bad82",
         "type": "github"
       },
       "original": {
@@ -4507,11 +4507,11 @@
         "nixpkgs": "nixpkgs_10"
       },
       "locked": {
-        "lastModified": 1779634131,
-        "narHash": "sha256-mAx7r7uVAupQ8BbcKGb/BNdmHqPvs9S5zCZfWfGsFW0=",
+        "lastModified": 1783520218,
+        "narHash": "sha256-FFRalyiZ/F94ivFv+4fOVpxVUvlBBe43YL9jgA8+zxE=",
         "owner": "LiGoldragon",
         "repo": "upgrade",
-        "rev": "b3c3be82a224f451e552283528d55c90e212d60e",
+        "rev": "88c0f3d1119ea8f078850794de02adbf2638fcf4",
         "type": "github"
       },
       "original": {

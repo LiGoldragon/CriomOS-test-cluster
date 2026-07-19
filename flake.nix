@@ -18,12 +18,13 @@
     horizon.url = "github:LiGoldragon/horizon-rs/main";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
-    # The Lojix release-safety candidate is consumed through its published
-    # review branch, not a command-line override. The C6 smoke builds its
-    # daemon and CLIs from exactly this locked candidate; its own nixpkgs,
+    # The Lojix release-safety repair is consumed through its published
+    # review branch, not a command-line override. It is stacked on the
+    # deployment-compatibility-preflight candidate, and its C6 smoke builds
+    # the daemon and CLIs from exactly this locked repair; its own nixpkgs,
     # crane, and fenix toolchain stay self-contained rather than following
     # this fixture's nixpkgs.
-    lojix.url = "github:LiGoldragon/lojix/deployment-compatibility-preflight";
+    lojix.url = "github:LiGoldragon/lojix/certification-blocker-repair";
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
