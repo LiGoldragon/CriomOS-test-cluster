@@ -2,13 +2,23 @@
 set -euo pipefail
 
 host="${1:-prometheus.goldragon.criome}"
+branch="${2:-main}"
+owner_repo="LiGoldragon/CriomOS-test-cluster"
 
-jj git push --bookmark main
+if ! revision="$(jj log -r "$branch" --no-graph -T 'commit_id')"; then
+  printf 'unknown fixture review bookmark: %s\n' "$branch" >&2
+  exit 2
+fi
 
-ssh "$host" 'bash -s' <<'REMOTE'
+jj git push --bookmark "$branch"
+
+ssh "$host" bash -s -- "$owner_repo" "$branch" "$revision" <<'REMOTE'
 set -euo pipefail
 
-repo="github:LiGoldragon/CriomOS-test-cluster"
+owner_repo="$1"
+branch="$2"
+revision="$3"
+repo="github:${owner_repo}/${revision}"
 sandbox="$(mktemp -d -t criomos-test-cluster.XXXXXX)"
 unit="criomos-test-cluster-$(date +%s)-$$"
 mkdir -p \
@@ -22,6 +32,8 @@ mkdir -p \
 cat >"$sandbox/artifacts/run.nota" <<EOF
 (CriomOSTestClusterRun
   (Repo "$repo")
+  (Branch "$branch")
+  (Revision "$revision")
   (Sandbox "$sandbox")
   (Unit "$unit"))
 EOF
