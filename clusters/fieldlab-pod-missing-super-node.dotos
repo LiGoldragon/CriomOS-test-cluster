@@ -1,5 +1,5 @@
 ;; Invalid fixture: pod points at a missing super-node.
-;; Canonical Nota: bracket strings, curly maps, Pascal booleans.
+;; Canonical Dotos: bracket strings, curly maps, Pascal booleans.
 
 ({
     atlas (LargeAiRouter

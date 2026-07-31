@@ -226,7 +226,7 @@
               ${horizonCli}/bin/horizon-cli \
                 --cluster fieldlab \
                 --node "$node" \
-                < ${./clusters/fieldlab.nota} \
+                < ${./clusters/fieldlab.dotos} \
                 > "$node.json"
               cmp "$node.json" ${./fixtures/horizon}/"$node.json"
             done
@@ -240,7 +240,7 @@
                 if ${horizonCli}/bin/horizon-cli \
                   --cluster fieldlab \
                   --node atlas \
-                  < ${./clusters/fieldlab-two-controllers.nota} \
+                  < ${./clusters/fieldlab-two-controllers.dotos} \
                   > "$out.unexpected" 2>"$out.err"; then
                   cat "$out.unexpected" >&2
                   exit 1
@@ -254,7 +254,7 @@
             if ${horizonCli}/bin/horizon-cli \
               --cluster fieldlab \
               --node atlas \
-              < ${./clusters/fieldlab-pod-missing-super-node.nota} \
+              < ${./clusters/fieldlab-pod-missing-super-node.dotos} \
               > "$out.unexpected" 2>"$out.err"; then
               cat "$out.unexpected" >&2
               exit 1
@@ -324,6 +324,22 @@
                   hostNode = "atlas";
                   vmNode = "mercury";
                 };
+
+            # Feasibility spike (see lib/nestedSpike.nix): boots a NESTED
+            # microvm guest inside a runNixOSTest host node and asserts its
+            # console is host-observable — the load-bearing unknown for a
+            # faithful test-vm-host.nix tap-networking test.
+            nested-microvm-spike = import ./lib/nestedSpike.nix {
+              inherit inputs pkgs system;
+            };
+
+            # The faithful two-guest reachability gate (see
+            # lib/nestedReachability.nix): atlas boots alpha (5::7) + beta
+            # (5::8) as NESTED microvms via test-vm-host.nix and proves alpha
+            # reaches beta by ping AND TCP over the real tap path.
+            nested-vm-guest-reachability = import ./lib/nestedReachability.nix {
+              inherit inputs pkgs self system;
+            };
 
             # The two-VM criome-attestation witness (see lib/mkCriomeAuthWitnessTest.nix).
             # As a `checks` entry it is a store-realised green; the FORCED-BOOT

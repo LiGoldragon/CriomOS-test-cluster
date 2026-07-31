@@ -1,5 +1,5 @@
 ;; Invalid fixture: two active nodes claim the tailnet controller role.
-;; Canonical Nota: bracket strings, curly maps, Pascal booleans.
+;; Canonical Dotos: bracket strings, curly maps, Pascal booleans.
 
 ({
     atlas (LargeAiRouter
