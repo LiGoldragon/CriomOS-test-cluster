@@ -1,25 +1,6 @@
-# Agent Instructions - CriomOS Test Cluster
+# Project Instructions for AI Agents
 
-## Repo Role
-
-This repository is an independent fixture cluster for CriomOS,
-Horizon, and sandboxed Nix regression tests. It is intentionally not
-the production cluster. Its purpose is to prove that CriomOS consumes
-projected Horizon data without depending on production node names,
-secrets, or host facts.
-
-## Rules
-
-- Keep fixtures synthetic. Do not copy production cluster names,
-  addresses, passwords, keys, or certificates into this repository.
-- Tests are Nix-first. Add constraints as `checks.*` and run them with
-  `nix flake check`.
-- Prometheus runs use `nix run .#run-on-prometheus`, which pushes
-  `main` and evaluates the public GitHub flake inside a transient
-  systemd user sandbox.
-- Use Nota for cluster input fixtures. Do not add YAML.
-- Use `jj` for local history and move the `main` bookmark explicitly
-  before pushing.
+This file provides instructions and context for AI coding agents working on this project.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
@@ -67,3 +48,22 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
+
+
+## Build & Test
+
+_Add your build and test commands here_
+
+```bash
+# Example:
+# npm install
+# npm test
+```
+
+## Architecture Overview
+
+_Add a brief overview of your project architecture_
+
+## Conventions & Patterns
+
+_Add your project-specific conventions here_

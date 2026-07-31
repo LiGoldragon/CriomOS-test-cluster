@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "CriomOS_test_cluster",
+  "project_id": "bbcd5269-18ad-40aa-9086-f9c387182fa2"
+}
