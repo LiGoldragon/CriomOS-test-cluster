@@ -67,3 +67,10 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
+
+## Protos estate status
+
+Protos estate scope: out of scope
+Stack: not applicable
+Role: operating-system test environment
+This is scope metadata, not a stack.
