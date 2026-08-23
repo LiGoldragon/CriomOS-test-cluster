@@ -25,7 +25,7 @@
     # configuration CLIs into the deployer node from this input. lojix pins
     # its own nixpkgs (its crane/fenix toolchain); we do NOT follow ours onto
     # it — the daemon is a self-contained release artifact.
-    lojix.url = "github:LiGoldragon/lojix/main";
+    lojix.url = "github:LiGoldragon/lojix/0105f8d8f18dd91291e0a0fbe828e84ceda65714";
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
@@ -338,7 +338,12 @@
             # (5::8) as NESTED microvms via test-vm-host.nix and proves alpha
             # reaches beta by ping AND TCP over the real tap path.
             nested-vm-guest-reachability = import ./lib/nestedReachability.nix {
-              inherit inputs pkgs self system;
+              inherit
+                inputs
+                pkgs
+                self
+                system
+                ;
             };
 
             # The two-VM criome-attestation witness (see lib/mkCriomeAuthWitnessTest.nix).
