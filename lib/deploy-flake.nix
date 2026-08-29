@@ -11,7 +11,7 @@
 #   command stays production-identical):
 #
 #   1. A real CriomOS toplevel eval reaches `inputs.clavifaber.packages.*` whose
-#      crane/fenix build fetches `nota-derive` over git AT EVAL TIME — an
+#      crane/fenix build fetches an upstream text-codec derivation over git AT EVAL TIME — an
 #      unavoidable network fetch (report 48 fix #1 hit exactly this and stubbed
 #      clavifaber). So this deploy flake threads a tiny OFFLINE clavifaber STUB
 #      through specialArgs.inputs; the rest of the node is mercury's real

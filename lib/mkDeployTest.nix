@@ -17,7 +17,7 @@
 #   - deployer: runs the FIXED real lojix daemon (lojix main, the <drv>^* fix)
 #       as a service with both sockets (ordinary 0660 + owner 0600), configured
 #       by the real lojix-write-configuration -> rkyv -> lojix-daemon path
-#       (daemons take only a pre-generated rkyv; never NOTA). meta-lojix + lojix
+#       (daemons take only a pre-generated rkyv; never source text). meta-lojix + lojix
 #       CLIs present. The deploy key authorises root@target; the target's
 #       <node>.<cluster>.criome address resolves (networking.hosts) to the
 #       target's test-network IP; ssh-ng host-key trust is pre-seeded. The whole
@@ -95,8 +95,8 @@ let
 
   lojixPackages = inputs.lojix.packages.${system};
   # The real fixed daemon (lojix main, <drv>^* fix) and the CLIs
-  # (meta-lojix / lojix / lojix-write-configuration, built with nota-text so the
-  # test can submit/query inline NOTA).
+  # (meta-lojix / lojix / lojix-write-configuration, built with their text CLI
+  # feature so the test can submit/query typed requests).
   lojixDaemon = lojixPackages.daemon-binary;
   lojixClis = lojixPackages.default;
 
@@ -323,8 +323,8 @@ let
       };
 
       # The lojix daemon as a service, configured the REAL way:
-      # lojix-write-configuration encodes a typed NOTA config into the rkyv
-      # startup the daemon consumes (daemons take only rkyv, never NOTA). Both
+      # lojix-write-configuration encodes a typed text config into the rkyv
+      # startup the daemon consumes (daemons take only rkyv, never source text). Both
       # sockets at the production modes (ordinary 0660, owner 0600).
       systemd.services.lojix-daemon = {
         description = "lojix deploy daemon (C6 smoke)";

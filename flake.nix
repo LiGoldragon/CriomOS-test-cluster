@@ -15,7 +15,7 @@
     criomos-home.follows = "criomos/criomos-home";
     home-manager.follows = "criomos/home-manager";
 
-    horizon.url = "github:LiGoldragon/horizon-rs/main";
+    horizon.url = "github:LiGoldragon/horizon-rs/f8c5808466a47c2fd741cf0b119d73e8ba2add3d";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
     # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*
@@ -222,11 +222,11 @@
         {
           projections-match-fieldlab = pkgs.runCommand "projections-match-fieldlab" { } ''
             set -eu
-            for node in atlas beacon cedar dune mercury edge-desktop base-home; do
+            for node in atlas beacon cedar dune mercury alpha beta edge-desktop base-home; do
               ${horizonCli}/bin/horizon-cli \
                 --cluster fieldlab \
                 --node "$node" \
-                < ${./clusters/fieldlab.dotos} \
+                < ${./clusters/fieldlab.datomic} \
                 > "$node.json"
               cmp "$node.json" ${./fixtures/horizon}/"$node.json"
             done
@@ -240,7 +240,7 @@
                 if ${horizonCli}/bin/horizon-cli \
                   --cluster fieldlab \
                   --node atlas \
-                  < ${./clusters/fieldlab-two-controllers.dotos} \
+                  < ${./clusters/fieldlab-two-controllers.datomic} \
                   > "$out.unexpected" 2>"$out.err"; then
                   cat "$out.unexpected" >&2
                   exit 1
@@ -254,7 +254,7 @@
             if ${horizonCli}/bin/horizon-cli \
               --cluster fieldlab \
               --node atlas \
-              < ${./clusters/fieldlab-pod-missing-super-node.dotos} \
+              < ${./clusters/fieldlab-pod-missing-super-node.datomic} \
               > "$out.unexpected" 2>"$out.err"; then
               cat "$out.unexpected" >&2
               exit 1
@@ -285,12 +285,13 @@
           # ==================================================================
           # The AUTO-PICKUP suite (§1). One `vm-<node>` check per declared
           # Pod-on-atlas guest, generated above with zero per-node authoring:
-          #   vm-base-home    (custom: home-profile anchor)
-          #   vm-dune         (standard: Edge fallback — boot+sshd+desktop)
-          #   vm-edge-desktop (custom: complex-OS desktop anchor)
-          #   vm-mercury      (standard: lean TestVm fallback — boot+sshd)
-          # dune is the proof: it had NO check before; declaring it a Pod on
-          # atlas now yields a real Edge standard check by declaration alone.
+          #   vm-alpha / vm-beta (standard: nested-reachability guests)
+          #   vm-base-home     (custom: home-profile anchor)
+          #   vm-dune          (standard: Edge fallback — boot+sshd+desktop)
+          #   vm-edge-desktop  (custom: complex-OS desktop anchor)
+          #   vm-mercury       (standard: lean TestVm fallback — boot+sshd)
+          # Every Pod atlas hosts has its independently projected fixture, so
+          # its check is generated from the same cluster-data declaration.
           # ==================================================================
           autoVmChecks
           // {

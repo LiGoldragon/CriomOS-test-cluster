@@ -102,19 +102,8 @@
       "virtualMachine": true,
       "iso": false,
       "largeAi": false,
-      "testVm": true
-    },
-    "typeIs": {
-      "center": false,
-      "edge": false,
-      "edgeTesting": false,
-      "hybrid": false,
-      "largeAi": false,
-      "largeAiRouter": false,
-      "mediaBroadcast": false,
-      "router": false,
-      "routerTesting": false,
-      "testVm": true
+      "testVm": true,
+      "cloudNode": false
     },
     "io": {
       "keyboard": "Qwerty",
@@ -182,16 +171,20 @@
       "http://nix.atlas.fieldlab.criome"
     ],
     "exNodesSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAlphaFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasFixtureSshPublicKeyBody000000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBetaFixtureSshPublicKeyBody0000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdgeDesktopFixtureSshPublicKeyBody00"
     ],
     "dispatchersSshPubKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAlphaFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBaseHomeFixtureSshPublicKeyBody0000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBeaconFixtureSshPublicKeyBody00000000",
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBetaFixtureSshPublicKeyBody0000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICedarFixtureSshPublicKeyBody000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDuneFixtureSshPublicKeyBody0000000000",
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEdgeDesktopFixtureSshPublicKeyBody00"
@@ -205,6 +198,94 @@
     "wireguardUntrustedProxies": []
   },
   "exNodes": {
+    "alpha": {
+      "name": "alpha",
+      "species": "TestVm",
+      "size": {
+        "min": true,
+        "medium": false,
+        "large": false,
+        "max": false
+      },
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Pod",
+        "arch": "X86_64",
+        "cores": 2,
+        "model": null,
+        "motherBoard": null,
+        "superNode": "atlas",
+        "superUser": "aria",
+        "chipGen": null,
+        "ramGb": 2,
+        "diskGb": 8,
+        "location": "home-lab",
+        "superNodes": []
+      },
+      "linkLocalIps": [],
+      "nodeIp": "5::7/128",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": null,
+      "services": [
+        {
+          "TailnetClient": {}
+        }
+      ],
+      "criomeDomainName": "alpha.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 1,
+      "buildCores": 1,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIAlphaFixtureSshPublicKeyBody000000000",
+      "nixPubKey": null,
+      "yggPubKey": null,
+      "yggAddress": null,
+      "yggSubnet": null,
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": false,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": false,
+      "hasYggPubKey": false,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": false,
+      "hasVideoOutput": false,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "lock",
+      "handleLidSwitchDocked": "ignore",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAlphaFixtureSshPublicKeyBody000000000",
+      "nixPubKeyLine": null,
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
+        "center": false,
+        "router": false,
+        "edge": false,
+        "nextGen": false,
+        "lowPower": false,
+        "bareMetal": false,
+        "virtualMachine": true,
+        "iso": false,
+        "largeAi": false,
+        "testVm": true,
+        "cloudNode": false
+      }
+    },
     "atlas": {
       "name": "atlas",
       "species": "LargeAiRouter",
@@ -271,7 +352,7 @@
           "VmHost": {
             "guestSubnet": "169.254.100.0/22",
             "kvm": "Available",
-            "maximumGuests": 4
+            "maximumGuests": 6
           }
         }
       ],
@@ -317,19 +398,8 @@
         "virtualMachine": false,
         "iso": false,
         "largeAi": true,
-        "testVm": false
-      },
-      "typeIs": {
-        "center": false,
-        "edge": false,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": true,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": false
+        "testVm": false,
+        "cloudNode": false
       }
     },
     "base-home": {
@@ -416,19 +486,8 @@
         "virtualMachine": true,
         "iso": false,
         "largeAi": false,
-        "testVm": true
-      },
-      "typeIs": {
-        "center": false,
-        "edge": false,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": true
+        "testVm": true,
+        "cloudNode": false
       }
     },
     "beacon": {
@@ -520,19 +579,96 @@
         "virtualMachine": false,
         "iso": false,
         "largeAi": false,
-        "testVm": false
+        "testVm": false,
+        "cloudNode": false
+      }
+    },
+    "beta": {
+      "name": "beta",
+      "species": "TestVm",
+      "size": {
+        "min": true,
+        "medium": false,
+        "large": false,
+        "max": false
       },
-      "typeIs": {
+      "trust": {
+        "min": true,
+        "medium": true,
+        "large": true,
+        "max": true
+      },
+      "machine": {
+        "species": "Pod",
+        "arch": "X86_64",
+        "cores": 2,
+        "model": null,
+        "motherBoard": null,
+        "superNode": "atlas",
+        "superUser": "aria",
+        "chipGen": null,
+        "ramGb": 2,
+        "diskGb": 8,
+        "location": "home-lab",
+        "superNodes": []
+      },
+      "linkLocalIps": [],
+      "nodeIp": "5::8/128",
+      "wireguardPubKey": null,
+      "nordvpn": false,
+      "wifiCert": false,
+      "wantsPrinting": false,
+      "wantsHwVideoAccel": false,
+      "routerInterfaces": null,
+      "services": [
+        {
+          "TailnetClient": {}
+        }
+      ],
+      "criomeDomainName": "beta.fieldlab.criome",
+      "system": "X86_64Linux",
+      "maxJobs": 1,
+      "buildCores": 1,
+      "sshPubKey": "AAAAC3NzaC1lZDI1NTE5AAAAIBetaFixtureSshPublicKeyBody0000000000",
+      "nixPubKey": null,
+      "yggPubKey": null,
+      "yggAddress": null,
+      "yggSubnet": null,
+      "isFullyTrusted": true,
+      "isRemoteNixBuilder": false,
+      "isDispatcher": true,
+      "isNixCache": false,
+      "isLargeEdge": false,
+      "enableNetworkManager": true,
+      "hasNixPubKey": false,
+      "hasYggPubKey": false,
+      "hasSshPubKey": true,
+      "hasWireguardPubKey": false,
+      "hasNordvpnPubKey": false,
+      "hasWifiCertPubKey": false,
+      "hasBasePubKeys": false,
+      "hasVideoOutput": false,
+      "chipIsIntel": true,
+      "modelIsThinkpad": false,
+      "handleLidSwitch": "suspend",
+      "handleLidSwitchExternalPower": "lock",
+      "handleLidSwitchDocked": "ignore",
+      "sshPubKeyLine": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBetaFixtureSshPublicKeyBody0000000000",
+      "nixPubKeyLine": null,
+      "nixCacheDomain": null,
+      "nixUrl": null,
+      "behavesAs": {
         "center": false,
-        "edge": false,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": true,
         "router": false,
-        "routerTesting": false,
-        "testVm": false
+        "edge": false,
+        "nextGen": false,
+        "lowPower": false,
+        "bareMetal": false,
+        "virtualMachine": true,
+        "iso": false,
+        "largeAi": false,
+        "testVm": true,
+        "cloudNode": false
       }
     },
     "cedar": {
@@ -624,19 +760,8 @@
         "virtualMachine": false,
         "iso": false,
         "largeAi": false,
-        "testVm": false
-      },
-      "typeIs": {
-        "center": false,
-        "edge": true,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": false
+        "testVm": false,
+        "cloudNode": false
       }
     },
     "dune": {
@@ -723,19 +848,8 @@
         "virtualMachine": true,
         "iso": false,
         "largeAi": false,
-        "testVm": false
-      },
-      "typeIs": {
-        "center": false,
-        "edge": true,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": false
+        "testVm": false,
+        "cloudNode": false
       }
     },
     "edge-desktop": {
@@ -822,19 +936,8 @@
         "virtualMachine": true,
         "iso": false,
         "largeAi": false,
-        "testVm": false
-      },
-      "typeIs": {
-        "center": false,
-        "edge": true,
-        "edgeTesting": false,
-        "hybrid": false,
-        "largeAi": false,
-        "largeAiRouter": false,
-        "mediaBroadcast": false,
-        "router": false,
-        "routerTesting": false,
-        "testVm": false
+        "testVm": false,
+        "cloudNode": false
       }
     }
   },

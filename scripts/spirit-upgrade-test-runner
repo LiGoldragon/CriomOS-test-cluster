@@ -5,7 +5,7 @@ set -euo pipefail
 # nspawn-spirit-upgrade-on-prometheus.
 #
 # Sequence:
-#   1. Start persona-spirit-daemon v0.1.0 with an explicit NOTA config.
+#   1. Start persona-spirit-daemon v0.1.0 with an explicit typed-text config.
 #   2. Write N synthetic records through the v0.1.0 spirit CLI.
 #   3. Stop v0.1.0 so the redb file is closed.
 #   4. Run upgrade-spirit-sandbox-test against the copied database path.
@@ -58,7 +58,7 @@ for i in $(seq 1 "$RECORD_COUNT"); do
     >/dev/null
 done
 
-spirit-v010 '(Observe (Records (None None SummaryOnly)))' >"$WORK/pre-upgrade.nota" 2>"$WORK/pre-upgrade.err" || true
+spirit-v010 '(Observe (Records (None None SummaryOnly)))' >"$WORK/pre-upgrade.out" 2>"$WORK/pre-upgrade.err" || true
 
 kill "$DAEMON_PID"
 wait "$DAEMON_PID" 2>/dev/null || true

@@ -12,7 +12,7 @@ guards against is any production fact reaching the platform repo's tests.
 
 ## The pipeline it owns
 
-`clusters/<cluster>.nota` (a cluster proposal) is projected by `horizon-cli`
+`clusters/<cluster>.datomic` (a cluster proposal) is projected by `horizon-cli`
 into a per-node JSON projection; the committed `fixtures/horizon/<node>.json`
 artifacts are pinned EQUAL to that projection by the
 `projections-match-fieldlab` check, so reading a fixture IS reading the
@@ -42,7 +42,7 @@ A node's species → `behavesAs.*` facets → which CriomOS module trees light u
 
 - an **Edge** Pod lights the desktop tree (greetd/regreet, polkit, dbus,
   gnome-keyring, niri session) — a **complex OS** profile. `edge-desktop` in
-  `fieldlab.nota`; the `edge-desktop-boots-greeter` check boots it and asserts
+  `fieldlab.datomic`; the `edge-desktop-boots-greeter` check boots it and asserts
   the display-manager + desktop-support services.
 - a lean **TestVm** Pod with `includeHome = true` keeps the home-manager base
   profile on an otherwise-minimal system — a **home profile**. `base-home`; the
@@ -76,7 +76,7 @@ BootOnce reboot (the deferred q35 part).
 The integration walls are unblocked IN the test (Spirit [dqg3]), never papered
 over: the daemon's `nix eval`/`nix build` run fully OFFLINE (the deploy flake
 re-derives the target's system with a clavifaber stub so eval never fetches
-`nota-derive`; the whole eval+build closure is pinned into the deployer store;
+an upstream text-codec derivation; the whole eval+build closure is pinned into the deployer store;
 `tarball-ttl` + `use-registries=false` make `nix eval --refresh` re-use the
 store-resident inputs by narHash); `<node>.<cluster>.criome` resolves via
 `networking.hosts`; the deploy key + accept-new host-key trust unblock ssh-ng

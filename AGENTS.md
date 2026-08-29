@@ -17,7 +17,8 @@ secrets, or host facts.
 - Prometheus runs use `nix run .#run-on-prometheus`, which pushes
   `main` and evaluates the public GitHub flake inside a transient
   systemd user sandbox.
-- Use Nota for cluster input fixtures. Do not add YAML.
+- Use canonical Datomic for cluster input fixtures. Do not add a legacy
+  notation, YAML, or a compatibility reader.
 - Use `jj` for local history and move the `main` bookmark explicitly
   before pushing.
 

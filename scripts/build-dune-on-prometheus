@@ -19,14 +19,6 @@ mkdir -p \
   "$sandbox/state/data" \
   "$sandbox/artifacts"
 
-cat >"$sandbox/artifacts/run.nota" <<EOF
-(CriomOSTestClusterBuild
-  (Repo "$repo")
-  (Package "dune-toplevel")
-  (Sandbox "$sandbox")
-  (Unit "$unit"))
-EOF
-
 if ! systemd-run \
     --user \
     --wait \

@@ -15,7 +15,7 @@ nix flake check
 
 The pure checks cover:
 
-- Horizon projection from a Nota cluster proposal.
+- Horizon projection from a canonical Datomic cluster proposal.
 - rejection of multiple active tailnet controller servers.
 - rejection of a pod node whose super-node is outside the cluster.
 - CriomOS network service rendering from `NodeServices`.

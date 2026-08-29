@@ -49,9 +49,9 @@ let
 
   criomePackage = inputs.criome.packages.${system}.default;
   routerPackage = inputs.router.packages.${system}.witness;
-  # The mirror WITNESS package: the daemon + nota-text CLIs PLUS the
+  # The mirror WITNESS package: the daemon + typed-text CLIs PLUS the
   # mirror-landed-body-verifier bin node-b runs in the VM to re-hash the landed
-  # body. (The witness feature also enables nota-text; the daemon is functionally
+  # body. (The witness feature also enables typed text; the daemon is functionally
   # identical to .default.)
   mirrorPackage = inputs.mirror.packages.${system}.witness;
   spiritPackage = inputs.spirit.packages.${system}.default;
@@ -113,11 +113,11 @@ let
     };
   };
 
-  # persona-router daemon. `actorHomesNota` is the bootstrap actor-home table
+  # persona-router daemon. `actorHomesText` is the bootstrap actor-home table
   # (empty string ⇒ no bootstrap, used by the source node). The receiver passes
   # the mirror actor home with a ComponentSocket endpoint (4th ActorHome field)
   # so a verified inbound forward's RoutedContractObject octets are relayed to
-  # the mirror's working socket, AND `grantsNota` — the 5th BootstrapWriteRequest
+  # the mirror's working socket, AND `grantsText` — the 5th BootstrapWriteRequest
   # list — an `(operator mirror)` direct-message channel grant, without which the
   # verified forward parks for adjudication and never reaches the mirror. Both
   # surfaces require router `criome-auth-witness` @ 221b5fb0; the 5-list
@@ -126,17 +126,17 @@ let
   routerService =
     {
       identity,
-      actorHomesNota ? "",
-      grantsNota ? "",
+      actorHomesText ? "",
+      grantsText ? "",
     }:
     let
-      hasBootstrap = actorHomesNota != "";
+      hasBootstrap = actorHomesText != "";
       bootstrapField = if hasBootstrap then "(Some ${routerBootstrap})" else "None";
       writeBootstrap =
         if hasBootstrap then
           ''
             ${routerPackage}/bin/router-write-bootstrap \
-              '(BootstrapWriteRequest ${routerBootstrap} [ ] [ ${actorHomesNota} ] [ ${grantsNota} ])'
+              '(BootstrapWriteRequest ${routerBootstrap} [ ] [ ${actorHomesText} ] [ ${grantsText} ])'
           ''
         else
           "";
@@ -244,7 +244,7 @@ let
   # owner-only meta Import bypasses the guardian but NOT the store's referent
   # canonicalization, so a referent must already be registered; an empty vector
   # imports cleanly and the forwarded head derives from identifier+description.
-  importNota = "(Import [(${recordIdentifier} ([(Technology (Software (Programming CodeGeneration)))] Decision [${recordDescription}] High Low Zero []))])";
+  importText = "(Import [(${recordIdentifier} ([(Technology (Software (Programming CodeGeneration)))] Decision [${recordDescription}] High Low Zero []))])";
 in
 pkgs.testers.runNixOSTest {
   name = "criome_attestation_propagates_through_router_to_mirror";
@@ -272,8 +272,8 @@ pkgs.testers.runNixOSTest {
           # so a verified inbound forward's Append octets reach the mirror, AND an
           # (operator mirror) channel grant so the verified forward is delivered
           # rather than parked for adjudication.
-          actorHomesNota = "(mirror 0 None (Some (ComponentSocket ${mirrorWorking})))";
-          grantsNota = "(operator mirror)";
+          actorHomesText = "(mirror 0 None (Some (ComponentSocket ${mirrorWorking})))";
+          grantsText = "(operator mirror)";
         })
         mirrorService
       ];
@@ -316,7 +316,7 @@ pkgs.testers.runNixOSTest {
     # guardian-compiled, no-agent (fail-closed) spirit daemon.
     # ===================================================================
     imported = node_a.succeed(
-        "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '${importNota}'"
+        "SPIRIT_META_SOCKET=${spiritMeta} ${spiritPackage}/bin/meta-spirit '${importText}'"
     ).strip()
     assert "Imported" in imported, f"meta Import must seed the record: {imported!r}"
     print("L3 OK: meta Import receipt =", imported)
@@ -547,7 +547,7 @@ pkgs.testers.runNixOSTest {
     # DIGEST landed; this proves the carried BODY is the genuine, intact record:
     # publish a zero-coverage checkpoint so Restore hands back the landed body,
     # then run the in-VM verifier, which decodes the binary Output::Restored
-    # reply directly (no NOTA byte-list parsing), reconstructs the
+    # reply directly (no byte-list text parsing), reconstructs the
     # VersionedCommitLogEntry through sema-engine, re-derives its content
     # address, and EXITS NONZERO unless the 32 digest BYTES equal the real
     # forwarded head. The proof is the bin's exit code + its printed re-hash, NOT

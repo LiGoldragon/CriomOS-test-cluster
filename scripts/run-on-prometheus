@@ -19,13 +19,6 @@ mkdir -p \
   "$sandbox/state/data" \
   "$sandbox/artifacts"
 
-cat >"$sandbox/artifacts/run.nota" <<EOF
-(CriomOSTestClusterRun
-  (Repo "$repo")
-  (Sandbox "$sandbox")
-  (Unit "$unit"))
-EOF
-
 if ! systemd-run \
     --user \
     --wait \
