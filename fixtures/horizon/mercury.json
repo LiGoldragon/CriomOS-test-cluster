@@ -791,6 +791,9 @@
           "kind": "edge"
         },
         {
+          "kind": "lowPower"
+        },
+        {
           "kind": "wifiCertificate"
         },
         {
@@ -823,7 +826,7 @@
         "router": false,
         "edge": true,
         "nextGeneration": false,
-        "lowPower": false,
+        "lowPower": true,
         "bareMetal": true,
         "virtualMachine": false,
         "iso": false,
@@ -906,6 +909,9 @@
           "kind": "edge"
         },
         {
+          "kind": "lowPower"
+        },
+        {
           "kind": "tailnetClient"
         }
       ],
@@ -928,7 +934,7 @@
         "router": false,
         "edge": true,
         "nextGeneration": false,
-        "lowPower": false,
+        "lowPower": true,
         "bareMetal": false,
         "virtualMachine": true,
         "iso": false,
@@ -1011,6 +1017,9 @@
           "kind": "edge"
         },
         {
+          "kind": "lowPower"
+        },
+        {
           "kind": "tailnetClient"
         }
       ],
@@ -1033,7 +1042,7 @@
         "router": false,
         "edge": true,
         "nextGeneration": false,
-        "lowPower": false,
+        "lowPower": true,
         "bareMetal": false,
         "virtualMachine": true,
         "iso": false,
