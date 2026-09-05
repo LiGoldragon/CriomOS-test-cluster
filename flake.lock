@@ -2474,17 +2474,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1788647794,
-        "narHash": "sha256-RaQl6W5fd/qhMh4qaqb97cXdYTKTaF6DETvUcClK5mQ=",
+        "lastModified": 1788651113,
+        "narHash": "sha256-mi4dbgbXNXGyB3wmzC4kxSfYm2gKzxmszH3MuM8OijQ=",
         "owner": "LiGoldragon",
         "repo": "criomos-horizon-config",
-        "rev": "e81ac6ea86e690a778fb8f4b38d98933a9007f7d",
+        "rev": "1f58fc5ef85d95c27049767726e25dc60b7009e5",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
         "repo": "criomos-horizon-config",
-        "rev": "e81ac6ea86e690a778fb8f4b38d98933a9007f7d",
+        "rev": "1f58fc5ef85d95c27049767726e25dc60b7009e5",
         "type": "github"
       }
     },

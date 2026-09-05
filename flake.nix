@@ -17,7 +17,7 @@
 
     horizon.url = "github:LiGoldragon/horizon-rs/05879e7c1e5f637f78fbe26234b95213c77c59bc";
 
-    horizon-config.url = "github:LiGoldragon/criomos-horizon-config/e81ac6ea86e690a778fb8f4b38d98933a9007f7d";
+    horizon-config.url = "github:LiGoldragon/criomos-horizon-config/1f58fc5ef85d95c27049767726e25dc60b7009e5";
     horizon-config.inputs.nixpkgs.follows = "nixpkgs";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
