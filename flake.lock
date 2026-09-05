@@ -1044,17 +1044,17 @@
         "system": "system"
       },
       "locked": {
-        "lastModified": 1788647911,
-        "narHash": "sha256-0jjXFX7kSr5Ike3ymRJGmiGXzVSWFkak88YB7hJ9iY4=",
+        "lastModified": 1788648657,
+        "narHash": "sha256-SPs+HPYx6KWeSPiApYi8tHWpS0wUT61xbCzgY4XdoLk=",
         "owner": "LiGoldragon",
         "repo": "CriomOS",
-        "rev": "7638fac03951fb5c995fd3289914368f27104d2d",
+        "rev": "8bbc75d3f2d1ed9a42a5063304083665b03b7c33",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
         "repo": "CriomOS",
-        "rev": "7638fac03951fb5c995fd3289914368f27104d2d",
+        "rev": "8bbc75d3f2d1ed9a42a5063304083665b03b7c33",
         "type": "github"
       }
     },
