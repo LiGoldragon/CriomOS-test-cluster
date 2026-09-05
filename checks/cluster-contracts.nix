@@ -33,9 +33,7 @@ let
     in
     horizon
     // {
-      cluster = horizon.cluster // {
-        tailnetBaseDomain = lib.replaceStrings [ from ] [ to ] horizon.cluster.tailnetBaseDomain;
-      };
+      tailnetBaseDomain = lib.replaceStrings [ from ] [ to ] horizon.tailnetBaseDomain;
       node = rewriteNode horizon.node;
       exNodes = lib.mapAttrs (_: rewriteNode) horizon.exNodes;
     };
@@ -62,8 +60,7 @@ let
   atlas = readHorizon "atlas";
   beacon = readHorizon "beacon";
   cedar = readHorizon "cedar";
-  serviceNames = services: map (service: builtins.head (builtins.attrNames service)) services;
-  hasService = service: services: builtins.elem service (serviceNames services);
+  hasCapability = kind: capabilities: builtins.any (capability: capability.kind == kind) capabilities;
 
   atlasNetwork = configurationFor atlas [
     (criomosModule "network/default.nix")
@@ -95,11 +92,11 @@ pkgs.runCommand "cluster-contracts" { } ''
   set -eu
 
   test ${lib.escapeShellArg atlas.node.name} = atlas
-  test ${lib.escapeShellArg atlas.cluster.name} = fieldlab
-  test ${lib.escapeShellArg (bool (hasService "TailnetClient" atlas.node.services))} = true
-  test ${lib.escapeShellArg (bool (hasService "TailnetController" atlas.node.services))} = true
-  test ${lib.escapeShellArg (bool (hasService "TailnetClient" cedar.node.services))} = true
-  test ${lib.escapeShellArg (bool cedar.node.hasWifiCertPubKey)} = true
+  test ${lib.escapeShellArg atlas.cluster} = fieldlab
+  test ${lib.escapeShellArg (bool (hasCapability "tailnetClient" atlas.node.capabilities))} = true
+  test ${lib.escapeShellArg (bool (hasCapability "tailnetController" atlas.node.capabilities))} = true
+  test ${lib.escapeShellArg (bool (hasCapability "tailnetClient" cedar.node.capabilities))} = true
+  test ${lib.escapeShellArg (bool (hasCapability "wifiCertificate" cedar.node.capabilities))} = true
 
   test ${lib.escapeShellArg (bool atlasNetwork.services.headscale.enable)} = true
   test ${lib.escapeShellArg (bool atlasNetwork.services.tailscale.enable)} = true

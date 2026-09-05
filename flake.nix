@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:LiGoldragon/nixpkgs?ref=main";
 
-    criomos.url = "github:LiGoldragon/CriomOS/main";
+    criomos.url = "github:LiGoldragon/CriomOS/7638fac03951fb5c995fd3289914368f27104d2d";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
 
@@ -15,7 +15,10 @@
     criomos-home.follows = "criomos/criomos-home";
     home-manager.follows = "criomos/home-manager";
 
-    horizon.url = "github:LiGoldragon/horizon-rs/f8c5808466a47c2fd741cf0b119d73e8ba2add3d";
+    horizon.url = "github:LiGoldragon/horizon-rs/05879e7c1e5f637f78fbe26234b95213c77c59bc";
+
+    horizon-config.url = "github:LiGoldragon/criomos-horizon-config/e81ac6ea86e690a778fb8f4b38d98933a9007f7d";
+    horizon-config.inputs.nixpkgs.follows = "nixpkgs";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
     # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*
@@ -61,6 +64,13 @@
           inherit (inputs.nixpkgs) lib;
           pkgs = inputs.nixpkgs.legacyPackages.${system};
           horizonCli = inputs.horizon.packages.${system}.default;
+          horizonCompose = inputs.horizon.packages.${system}.horizon-compose;
+          fieldlabHorizonDefinition = inputs.horizon-config.lib.composeHorizonDefinition {
+            inherit system horizonCompose;
+            configuration = ./clusters/fieldlab-horizon-configuration.datom;
+            cluster = ./clusters/fieldlab-definition.datom;
+          };
+          fieldlabHorizonDefinitionPath = inputs.horizon-config.lib.horizonDefinitionPath fieldlabHorizonDefinition;
 
           # ================================================================
           # AUTO-PICKUP: declaring a test-VM node IS getting a test (§1).
@@ -111,7 +121,7 @@
             lib.attrNames (
               lib.filterAttrs (
                 _: exNode:
-                (exNode.machine.superNode or null) == vmHostNode && (exNode.machine.species or null) == "Pod"
+                (exNode.machine.host or null) == vmHostNode && (exNode.machine.kind or null) == "VirtualMachine"
               ) (hostHorizon.exNodes or { })
             )
           );
@@ -224,9 +234,8 @@
             set -eu
             for node in atlas beacon cedar dune mercury alpha beta edge-desktop base-home; do
               ${horizonCli}/bin/horizon-cli \
-                --cluster fieldlab \
                 --node "$node" \
-                < ${./clusters/fieldlab.datomic} \
+                < ${fieldlabHorizonDefinitionPath} \
                 > "$node.json"
               cmp "$node.json" ${./fixtures/horizon}/"$node.json"
             done
@@ -237,29 +246,25 @@
             pkgs.runCommand "multiple-tailnet-controllers-rejected" { }
               ''
                 set -eu
-                if ${horizonCli}/bin/horizon-cli \
-                  --cluster fieldlab \
-                  --node atlas \
-                  < ${./clusters/fieldlab-two-controllers.datomic} \
+                if ${horizonCompose}/bin/horizon-compose \
+                  "Compose.{ ${./clusters/fieldlab-horizon-configuration.datom} ${./clusters/fieldlab-two-controllers-definition.datom} }" \
                   > "$out.unexpected" 2>"$out.err"; then
                   cat "$out.unexpected" >&2
                   exit 1
                 fi
-                grep -F 'multiple tailnet controller servers' "$out.err"
+                grep -F 'trusted cluster has more than one TailnetController' "$out.err"
                 touch "$out"
               '';
 
           pod-missing-super-node-rejected = pkgs.runCommand "pod-missing-super-node-rejected" { } ''
             set -eu
-            if ${horizonCli}/bin/horizon-cli \
-              --cluster fieldlab \
-              --node atlas \
-              < ${./clusters/fieldlab-pod-missing-super-node.datomic} \
+            if ${horizonCompose}/bin/horizon-compose \
+              "Compose.{ ${./clusters/fieldlab-horizon-configuration.datom} ${./clusters/fieldlab-pod-missing-super-node-definition.datom} }" \
               > "$out.unexpected" 2>"$out.err"; then
               cat "$out.unexpected" >&2
               exit 1
             fi
-            grep -F 'references missing super-node' "$out.err"
+            grep -F 'names unknown cluster host' "$out.err"
             touch "$out"
           '';
 

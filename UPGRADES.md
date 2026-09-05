@@ -1,16 +1,18 @@
 # Upgrades
 
-## Unreleased — Horizon 0.5.1 Datomic fixtures
+## Unreleased — Horizon 0.6 typed Horizon definitions
 
-The synthetic cluster proposals moved from legacy Dotos to canonical Datomic
-as one atomic migration with Horizon `0.5.1`
-(`f8c5808466a47c2fd741cf0b119d73e8ba2add3d`). A one-shot historical typed
-decoder recovered each legacy proposal; the current Horizon typed writer
-emitted the Datomic source. The migration evidence is retained outside the
+The synthetic cluster proposals moved from legacy Dotos to current Datom as
+one atomic migration with Horizon `0.6.0`
+(`05879e7c1e5f637f78fbe26234b95213c77c59bc`). A one-shot historical typed
+reader recovered each proposal; the current typed writer emitted a
+`ClusterDefinition`, which the explicit `HorizonConfiguration` composes into
+one `HorizonDefinition`. The migration evidence is retained outside the
 product repository.
 
-Consumers must use `clusters/*.datomic` and the pinned current Horizon CLI.
-There is no compatibility parser or legacy fixture path.
+Consumers must use the composed `horizon-definition.datom` child from the
+generic compositor output directory and the pinned current Horizon CLI. There
+is no compatibility parser or legacy fixture path.
 
 ### CriomOS Chroma owner-chain lock
 

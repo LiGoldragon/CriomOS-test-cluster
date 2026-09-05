@@ -12,8 +12,9 @@ guards against is any production fact reaching the platform repo's tests.
 
 ## The pipeline it owns
 
-`clusters/<cluster>.datomic` (a cluster proposal) is projected by `horizon-cli`
-into a per-node JSON projection; the committed `fixtures/horizon/<node>.json`
+`clusters/fieldlab-definition.datom` and its explicit
+`HorizonConfiguration` are typed-composed into one `horizon-definition.datom`,
+then `horizon-cli` projects a per-node JSON projection; the committed `fixtures/horizon/<node>.json`
 artifacts are pinned EQUAL to that projection by the
 `projections-match-fieldlab` check, so reading a fixture IS reading the
 projection. Every test then builds a node by feeding its projection to a real
@@ -36,22 +37,22 @@ cluster-specific**: it is a function of the cluster model.
 
 ## Complex-OS + home-profile suite (the headline)
 
-A test boots ANY Pod-substrate node hosted on a `VmHost` host (relaxed from "a
+A test boots ANY VirtualMachine node hosted by a `VmHost` capability (relaxed from "a
 lean TestVm"): the PROFILE under test is whatever the node's projection derives.
-A node's species → `behavesAs.*` facets → which CriomOS module trees light up:
+A node's capabilities → `behavesAs.*` facets → which CriomOS module trees light up:
 
-- an **Edge** Pod lights the desktop tree (greetd/regreet, polkit, dbus,
+- an **Edge** VirtualMachine lights the desktop tree (greetd/regreet, polkit, dbus,
   gnome-keyring, niri session) — a **complex OS** profile. `edge-desktop` in
-  `fieldlab.datomic`; the `edge-desktop-boots-greeter` check boots it and asserts
+  `fieldlab-definition.datom`; the `edge-desktop-boots-greeter` check boots it and asserts
   the display-manager + desktop-support services.
-- a lean **TestVm** Pod with `includeHome = true` keeps the home-manager base
+- a lean **TestVm** VirtualMachine with `includeHome = true` keeps the home-manager base
   profile on an otherwise-minimal system — a **home profile**. `base-home`; the
   `base-home-activates` check asserts the per-user activation generation runs
   and a home program (`programs.git` → `~/.config/git/config`) lands.
 
 The generator reads the host's `VmHost` capability fully: `kvm` (Available →
 KVM, Absent → a TCG software substrate) and `maximum_guests` (asserted against
-the host's hosted Pod-substrate set; over-subscription fails at eval). The home
+the host's hosted VirtualMachine set; over-subscription fails at eval). The home
 toggle is the one cluster-decided flag (proposal decision 4 — `includeHome`),
 derived from role by default and set explicitly only for the home-isolation
 case.

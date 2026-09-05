@@ -129,17 +129,17 @@ let
 
   # The host's cluster-authored VmHost service (C1) — services is a list of
   # single-key attrsets, one per NodeService variant.
-  hostVmHostService = lib.findFirst (service: service ? VmHost) null (
-    hostHorizon.node.services or [ ]
+  hostVmHostService = lib.findFirst (capability: capability.kind == "vmHost") null (
+    hostHorizon.node.capabilities or [ ]
   );
   hostDeclaresVmHost = hostVmHostService != null;
 
-  # The target must be a Pod-substrate node whose machine.superNode names the
+  # The target must be a Pod-substrate node whose machine.host names the
   # declared host (the exact "vmNode is a Pod on this VmHost" claim).
-  vmNodeIsPod = (machine.species or null) == "Pod";
-  vmNodeHostedByHost = (machine.superNode or null) == hostNode;
+  vmNodeIsPod = (machine.kind or null) == "VirtualMachine";
+  vmNodeHostedByHost = (machine.host or null) == hostNode;
 
-  clusterName = guestHorizon.cluster.name or cluster;
+  clusterName = guestHorizon.cluster or cluster;
   criomeDomainName = guestHorizon.node.criomeDomainName or "${guestName}.${clusterName}.criome";
 
   # The target's test-network IP. runNixOSTest assigns 192.168.1.<N> per node on
@@ -186,9 +186,9 @@ let
 
       # size from the projected machine facts.
       virtualisation = {
-        cores = machine.cores;
-        memorySize = machine.ramGb * 1024;
-        diskSize = machine.diskGb * 1024;
+        cores = machine.hardware.cores;
+        memorySize = machine.hardware.ramGib * 1024;
+        diskSize = machine.diskGib * 1024;
         # A real writable disk + EFI so the deployed generation activates and
         # bootctl can run. runNixOSTest gives a writable store for free; the
         # UEFI vars make `bootctl` operate (report 49 substrate, inside the
@@ -391,10 +391,10 @@ let
     assert lib.assertMsg hostDeclaresVmHost
       "mkDeployTest: hostNode ${hostNode} declares no VmHost service in its projection; it cannot host the deploy target ${vmNode}.";
     assert lib.assertMsg vmNodeIsPod
-      "mkDeployTest: vmNode ${vmNode} is not a Pod-substrate node (machine.species != Pod in its projection); only a Pod node runs as a VM on a host.";
+      "mkDeployTest: vmNode ${vmNode} is not a Pod-substrate node (machine.kind != VirtualMachine in its projection); only a Pod node runs as a VM on a host.";
     assert lib.assertMsg vmNodeHostedByHost
-      "mkDeployTest: vmNode ${vmNode} machine.superNode is ${
-        toString (machine.superNode or null)
+      "mkDeployTest: vmNode ${vmNode} machine.host is ${
+        toString (machine.host or null)
       }, not the declared hostNode ${hostNode}; the target is not hosted on this VmHost.";
     value;
 in

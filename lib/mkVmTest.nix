@@ -110,8 +110,7 @@ let
 
   # The criome domain of a node from its own projection (never invented).
   guestDomainOf =
-    horizon:
-    horizon.node.criomeDomainName or "${horizon.node.name}.${horizon.cluster.name}.criome";
+    horizon: horizon.node.criomeDomainName or "${horizon.node.name}.${horizon.cluster}.criome";
 
   # The host's cluster-authored VmHost service (C1). The generator reads the
   # SAME datum test-vm-host.nix reads on the real host: services is a list of
@@ -119,10 +118,10 @@ let
   vmHostServiceOf =
     hostHorizon:
     let
-      services = hostHorizon.node.services or [ ];
-      entry = lib.findFirst (service: service ? VmHost) null services;
+      capabilities = hostHorizon.node.capabilities or [ ];
+      entry = lib.findFirst (capability: capability.kind == "vmHost") null capabilities;
     in
-    if entry == null then null else entry.VmHost;
+    entry;
 
   # The host's Pod-substrate guests — every exNode whose machine.superNode names
   # this host AND whose substrate is Pod (a VM the host runs), by sorted name.
@@ -135,8 +134,7 @@ let
       lib.attrNames (
         lib.filterAttrs (
           _: exNode:
-          (exNode.machine.superNode or null) == hostNodeName
-          && (exNode.machine.species or null) == "Pod"
+          (exNode.machine.host or null) == hostNodeName && (exNode.machine.kind or null) == "VirtualMachine"
         ) (hostHorizon.exNodes or { })
       )
     );
@@ -165,7 +163,12 @@ let
       prefix = prefixLengthOf cidr;
       total = twoToThe (32 - prefix);
     in
-    if prefix == null then null else if prefix >= 31 then total else total - 2;
+    if prefix == null then
+      null
+    else if prefix >= 31 then
+      total
+    else
+      total - 2;
 
   # Slice the host-side endpoint for a guest out of the host's guest_subnet,
   # mirroring test-vm-host.nix's hostTapAddress (base + index + 1). The hermetic
@@ -175,7 +178,7 @@ let
   hostTapAddressOf =
     vmHost: index:
     let
-      base = bareAddress (vmHost.guestSubnet or null);
+      base = bareAddress (vmHost.guest_subnet or null);
       octets = map lib.toInt (lib.splitString "." base);
       flat = (lib.elemAt octets 3) + index + 1;
     in
@@ -224,9 +227,9 @@ let
   # /dev/kvm. Read off cluster data, the same atom test-vm-host.nix reads.
   kvmAvailable = vmHost != null && (vmHost.kvm or "Absent") == "Available";
 
-  # The host's declared capacity ceiling, if any (maximumGuests is omitted from
+  # The host's declared capacity ceiling, if any (maximum_guests is omitted from
   # the projection when the cluster authored no ceiling).
-  maximumGuests = if vmHost == null then null else (vmHost.maximumGuests or null);
+  maximum_guests = if vmHost == null then null else (vmHost.maximum_guests or null);
 
   # The guest's index among the host's hosted POD guests, by sorted name — the
   # deterministic key test-vm-host.nix uses to slice per-guest endpoints. C5:
@@ -239,10 +242,7 @@ let
   # a host that forgot to declare VmHost fails the test rather than silently
   # losing its address to a Nix default).
   hostTapAddress =
-    if vmHost == null || guestIndex == null then
-      null
-    else
-      hostTapAddressOf vmHost guestIndex;
+    if vmHost == null || guestIndex == null then null else hostTapAddressOf vmHost guestIndex;
 
   # The C3 substrate profile, substrate-parameterized.
   substrateProfile = import "${inputs.criomos}/modules/nixos/test-substrate.nix" {
@@ -264,12 +264,12 @@ let
   # C5 relaxation: the guest must be a Pod-SUBSTRATE node (a VM the host runs),
   # NOT necessarily a lean TestVm. Its ROLE (Edge / Router / TestVm / ...) is
   # whatever its projection derived; the generator tests that role's profile.
-  guestIsPod = (machine.species or null) == "Pod";
+  guestIsPod = (machine.kind or null) == "VirtualMachine";
   hostDeclaresVmHost = vmHost != null;
   hostHostsGuest = guestIndex != null;
   # The host's hosted Pod set must fit its declared ceiling (over-subscription
   # is a cluster-authoring error). Absent ceiling -> no limit.
-  capacityOk = maximumGuests == null || hostedCount <= maximumGuests;
+  capacityOk = maximum_guests == null || hostedCount <= maximum_guests;
 
   # The hosted set (and any declared ceiling) must also fit the guest_subnet's
   # USABLE HOST SLOTS — each guest's host endpoint is sliced base + (index + 1)
@@ -277,8 +277,8 @@ let
   # slice outside the declared network (finding 1). The required slot count is
   # the larger of the actual hosted set and the advertised ceiling, so a host
   # whose ceiling already over-subscribes the subnet fails even before it fills.
-  subnetHostSlots = if vmHost == null then null else usableHostCount (vmHost.guestSubnet or null);
-  requiredSlots = if maximumGuests == null then hostedCount else lib.max hostedCount maximumGuests;
+  subnetHostSlots = if vmHost == null then null else usableHostCount (vmHost.guest_subnet or null);
+  requiredSlots = if maximum_guests == null then hostedCount else lib.max hostedCount maximum_guests;
   subnetCapacityOk = subnetHostSlots == null || requiredSlots <= subnetHostSlots;
 
   # includeHome is DERIVED from the role unless the author overrode it: a lean
@@ -294,15 +294,17 @@ let
   assertModel =
     value:
     assert lib.assertMsg guestIsPod
-      "mkVmTest: vmNode ${vmNode} is not a Pod-substrate node (machine.species != Pod in its projection); only a Pod node runs as a VM on a host.";
+      "mkVmTest: vmNode ${vmNode} is not a VirtualMachine node (machine.kind != VirtualMachine in its projection); only a declared VM runs on a cluster host.";
     assert lib.assertMsg hostDeclaresVmHost
       "mkVmTest: hostNode ${hostNode} declares no VmHost service in its projection; it cannot host a test VM.";
     assert lib.assertMsg hostHostsGuest
-      "mkVmTest: hostNode ${hostNode} does not host vmNode ${vmNode} (no Pod exNode with superNode == ${hostNode} named ${vmNode}).";
+      "mkVmTest: hostNode ${hostNode} does not host vmNode ${vmNode} (no VirtualMachine exNode with host == ${hostNode} named ${vmNode}).";
     assert lib.assertMsg capacityOk
-      "mkVmTest: hostNode ${hostNode} hosts ${toString hostedCount} Pod guests but declares maximum_guests = ${toString maximumGuests}; raise the ceiling or move guests.";
+      "mkVmTest: hostNode ${hostNode} hosts ${toString hostedCount} Pod guests but declares maximum_guests = ${toString maximum_guests}; raise the ceiling or move guests.";
     assert lib.assertMsg subnetCapacityOk
-      "mkVmTest: hostNode ${hostNode} needs ${toString requiredSlots} guest tap slots but its VmHost.guest_subnet ${toString (vmHost.guestSubnet or null)} has only ${toString subnetHostSlots} usable host addresses; widen the subnet or reduce the hosted set.";
+      "mkVmTest: hostNode ${hostNode} needs ${toString requiredSlots} guest tap slots but its VmHost.guest_subnet ${
+        toString (vmHost.guest_subnet or null)
+      } has only ${toString subnetHostSlots} usable host addresses; widen the subnet or reduce the hosted set.";
     value;
 
   guestModuleFromCluster =
@@ -328,9 +330,9 @@ let
 
       # --- size: 100% from the guest's projected machine facts ---------------
       virtualisation = {
-        cores = machine.cores;
-        memorySize = machine.ramGb * 1024; # MiB
-        diskSize = machine.diskGb * 1024; # MiB
+        cores = machine.hardware.cores;
+        memorySize = machine.hardware.ramGib * 1024; # MiB
+        diskSize = machine.diskGib * 1024; # MiB
         # accel: cluster-decided. kvm Available -> KVM; Absent -> TCG software.
         # runNixOSTest's qemu-vm node uses KVM when /dev/kvm exists; force TCG
         # off the host's declared VmHost.kvm when the cluster says no hardware.
