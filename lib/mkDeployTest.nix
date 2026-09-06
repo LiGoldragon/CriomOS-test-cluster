@@ -656,14 +656,13 @@ let
   # preserves the real command's argv, inherited context, output, and status in
   # the test VM when a pipeline effect fails.  It executes the immutable Nix
   # binary directly and forwards its streams unchanged; it is not a fallback or
-  # an alternate evaluator.
+  # an alternate evaluator.  The service creates the 0600 log before the daemon
+  # starts; each invocation appends so the Eval and later Build are both visible.
   lojixNixCommandCapture = pkgs.writeShellScriptBin "nix" ''
     set -u
     original_umask="$(umask)"
     umask 077
     log=/run/lojix/nix-command-capture.log
-    : > "$log"
-    ${pkgs.coreutils}/bin/chmod 0600 "$log"
     capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/nix-command.XXXXXX)"
     ${pkgs.coreutils}/bin/chmod 0700 "$capture_directory"
     : > "$capture_directory/stdout"
@@ -701,6 +700,54 @@ let
     # A shell observes a signalled child as 128 + signal.  Re-raise that signal
     # after recording and forwarding the streams, rather than converting it to
     # an ordinary successful wrapper exit.
+    if test "$status" -gt 128 && test "$status" -le 192; then
+      kill -"$((status - 128))" "$$"
+    fi
+    exit "$status"
+  '';
+
+  # The activation effect invokes ssh outside the Nix build child.  Preserve
+  # its exact command boundary with the same transparent fixture-only capture
+  # semantics as the Nix shim so an Activate terminal records its actual error.
+  lojixSshCommandCapture = pkgs.writeShellScriptBin "ssh" ''
+    set -u
+    original_umask="$(umask)"
+    umask 077
+    log=/run/lojix/ssh-command-capture.log
+    capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/ssh-command.XXXXXX)"
+    ${pkgs.coreutils}/bin/chmod 0700 "$capture_directory"
+    : > "$capture_directory/stdout"
+    : > "$capture_directory/stderr"
+    ${pkgs.coreutils}/bin/chmod 0600 "$capture_directory/stdout" "$capture_directory/stderr"
+    umask "$original_umask"
+    trap '${pkgs.coreutils}/bin/rm -rf "$capture_directory"' EXIT
+
+    {
+      printf '%s\n' '=== C6 lojix daemon SSH command ==='
+      printf 'uid='; ${pkgs.coreutils}/bin/id -u
+      printf 'working-directory='; ${pkgs.coreutils}/bin/pwd
+      printf 'PATH=%s\n' "$PATH"
+      printf 'argv='
+      printf '%q ' "$@"
+      printf '\n'
+    } >> "$log"
+
+    set +e
+    ${pkgs.openssh}/bin/ssh "$@" > "$capture_directory/stdout" 2> "$capture_directory/stderr"
+    status=$?
+    set -e
+
+    {
+      printf 'exit-status=%s\n' "$status"
+      printf '%s\n' '--- stdout ---'
+      ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
+      printf '%s\n' '--- stderr ---'
+      ${pkgs.coreutils}/bin/cat "$capture_directory/stderr"
+      printf '%s\n' '=== end C6 lojix daemon SSH command ==='
+    } >> "$log"
+
+    ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
+    ${pkgs.coreutils}/bin/cat "$capture_directory/stderr" >&2
     if test "$status" -gt 128 && test "$status" -le 192; then
       kill -"$((status - 128))" "$$"
     fi
@@ -1133,10 +1180,19 @@ let
           echo "C6 deployer store preseed valid output=${deployedToplevel} registeredDeriver=$registered_deriver expectedDeriver=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
-          # Place the transparent capture shim only in the daemon's inherited
-          # environment.  Pre-daemon replay probes intentionally remain outside
-          # this diagnostic boundary.
-          export PATH="${lojixNixCommandCapture}/bin:$PATH"
+          # Place the transparent capture shims only in the daemon's inherited
+          # environment. Pre-daemon replay probes intentionally remain outside
+          # this diagnostic boundary. Initialize both logs before the daemon so
+          # every Eval, Build, and SSH activation child appends one record.
+          original_umask="$(umask)"
+          umask 077
+          : > /run/lojix/nix-command-capture.log
+          : > /run/lojix/ssh-command-capture.log
+          ${pkgs.coreutils}/bin/chmod 0600 \
+            /run/lojix/nix-command-capture.log \
+            /run/lojix/ssh-command-capture.log
+          umask "$original_umask"
+          export PATH="${lojixNixCommandCapture}/bin:${lojixSshCommandCapture}/bin:$PATH"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -1234,6 +1290,20 @@ assertModel (
           "-o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=10 "
           "root@${criomeDomainName} true"
       )
+      # Record the target's UEFI-shaped test substrate before deployment. C6
+      # stages a system profile through the real nix-env + switch-to-configuration
+      # path, while its direct-boot guest intentionally provides a no-op bootctl
+      # reconciliation rather than claiming persistent loader-entry coverage.
+      target_boot_environment = ${vmNode}.succeed(
+          "set -eu; "
+          "if test -d /sys/firmware/efi; then echo 'efi-directory=present'; else echo 'efi-directory=absent'; fi; "
+          "while read -r device mountpoint filesystem options rest; do "
+          "case \"$mountpoint\" in /boot|/boot/efi|/efi) printf 'boot-mount=%s %s %s\\n' \"$device\" \"$mountpoint\" \"$filesystem\" ;; esac; "
+          "done < /proc/mounts; "
+          "bootctl_path=$(command -v bootctl); printf 'bootctl-path=%s\\n' \"$bootctl_path\"; "
+          "readlink -f \"$bootctl_path\"; \"$bootctl_path\" status"
+      )
+      print("C6 target boot environment:", target_boot_environment)
 
       # baseline generation the target booted (the deploy must ADVANCE it).
       base_system = ${vmNode}.succeed("readlink -f /run/current-system").strip()
@@ -1284,82 +1354,48 @@ assertModel (
       assert "nixos-system-${vmNode}" in expected_closure, expected_closure
       assert expected_derivation.endswith(".drv"), expected_derivation
 
-      # The daemon is SILENT during the deploy (no logs); it owns the
-      # build->copy->activate pipeline after AcceptedDeploy. The ground truth of
-      # the microvm-scoped GENERATION-ACTIVATION is the TARGET's own system profile
-      # link — poll it directly until it becomes the deployed closure (the daemon's
-      # `nix-env --set` on the target). This is the report-46/48 approach: observe
-      # the deploy's durable effect rather than the silent daemon.
-      # Poll the schema-owned durable deployment record before waiting for the
-      # target profile. A failed/rejected pipeline must surface its current
-      # `DeploymentLifecycle.[ Failed Rejected ... ]` and
-      # `DeploymentTerminal.[ Failed.DeploymentFailure
-      # Rejected.DeploymentTerminalReason Succeeded ]` state promptly, rather
-      # than making a known failure consume the whole profile timeout.
+      # The daemon owns the build->copy->activate pipeline after AcceptedDeploy.
+      # A terminal failure is decisive even if `nix-env --set` already flipped
+      # the target profile before a later activation command failed. Poll the
+      # durable record first on every iteration and print the raw typed reply
+      # plus both daemon-side command captures before raising.
+      def fail_for_terminal(observed_query):
+          print("durable failed/rejected deployment state:", observed_query)
+          print("=== lojix daemon deployment journal ===")
+          print(deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1])
+          print("=== lojix daemon Nix command capture ===")
+          print(deployer.execute("cat /run/lojix/nix-command-capture.log 2>/dev/null || true")[1])
+          print("=== lojix daemon SSH command capture ===")
+          print(deployer.execute("cat /run/lojix/ssh-command-capture.log 2>/dev/null || true")[1])
+          raise AssertionError(
+              "lojix deployment reached a durable Failed or Rejected terminal state"
+          )
+
       for _ in range(600):
           observed_query = query_node()
           if "Failed" in observed_query or "Rejected" in observed_query:
-              daemon_journal = deployer.execute(
-                  "journalctl -u lojix-daemon.service --no-pager"
-              )[1]
-              daemon_nix_capture = deployer.execute(
-                  "cat /run/lojix/nix-command-capture.log 2>/dev/null || true"
-              )[1]
-              # `EffectStage::Eval` maps every subprocess failure to the public
-              # FlakeReferenceMalformed terminal reason. Reconstruct the exact
-              # daemon-side eval after materialization so the test reports the
-              # Nix stdout/stderr that distinguishes a locator defect from a
-              # replayed input, import, or selector failure.
-              materialized_root = (
-                  "/var/lib/lojix/generated-inputs/"
-                  "${clusterName}/${vmNode}/base-host"
-              )
-              # Preserve the daemon-produced terminal before the independent
-              # reproduction so it remains clear which result belongs to the
-              # production effect pipeline.
-              print("durable failed/rejected deployment state:", observed_query)
-              diagnostic_status, diagnostic_output = deployer.execute(
-                  "set -u; "
-                  "printf 'C6 eval uid='; id -u; printf 'C6 eval working-directory='; pwd; "
-                  "printf '%s\n' '=== C6 relevant Nix environment ==='; "
-                  "env | grep -E '^(NIX_CONFIG|NIX_PATH|NIX_REMOTE|XDG_CACHE_HOME)=' || true; "
-                  "printf '%s\n' '=== C6 relevant Nix configuration ==='; "
-                  "nix show-config | grep -E '^(flake-registry|use-registries|experimental-features|extra-experimental-features) =' || true; "
-                  "escape_nar() { printf '%s' $1 | sed -e 's/%/%25/g' -e 's/+/%2B/g' -e 's#/#%2F#g' -e 's/=/%3D/g'; }; "
-                  "set -- nix eval --raw; "
-                  f"for input in horizon system deployment secrets; do nar=$(nix hash path --type sha256 --sri {materialized_root}/$input); "
-                  "encoded=$(escape_nar $nar); printf 'C6 eval override %s path:%s narHash=%s\n' $input "
-                  f"{materialized_root}/$input $encoded; set -- $@ --override-input $input "
-                  f"path:{materialized_root}/$input?narHash=$encoded; done; "
-                  "set -- $@ '${deployFlakeReference}#nixosConfigurations.target.config.system.build.toplevel.drvPath'; "
-                  "printf '%s\n' '=== C6 reconstructed daemon nix eval ==='; $@"
-              )
-              print("=== reconstructed daemon nix eval status ===", diagnostic_status)
-              print("=== reconstructed daemon nix eval output ===")
-              print(diagnostic_output)
-              print("=== lojix daemon deployment journal ===")
-              print(daemon_journal)
-              print("=== lojix daemon Nix command capture ===")
-              print(daemon_nix_capture)
-              raise AssertionError(
-                  "lojix deployment reached a durable Failed or Rejected terminal state"
-              )
+              fail_for_terminal(observed_query)
           profile_target = ${vmNode}.execute(
               "readlink -f /nix/var/nix/profiles/system"
           )[1].strip()
-          if profile_target == expected_closure:
+          if (
+              profile_target == expected_closure
+              and "Completed" in observed_query
+              and "Succeeded" in observed_query
+          ):
+              final_query = observed_query
               break
           deployer.sleep(1)
       else:
-          final_wait_query = query_node()
-          daemon_journal = deployer.execute(
-              "journalctl -u lojix-daemon.service --no-pager"
-          )[1]
-          print("durable deployment state after profile timeout:", final_wait_query)
+          print("durable deployment state after terminal/profile timeout:", observed_query)
           print("=== lojix daemon deployment journal ===")
-          print(daemon_journal)
+          print(deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1])
+          print("=== lojix daemon Nix command capture ===")
+          print(deployer.execute("cat /run/lojix/nix-command-capture.log 2>/dev/null || true")[1])
+          print("=== lojix daemon SSH command capture ===")
+          print(deployer.execute("cat /run/lojix/ssh-command-capture.log 2>/dev/null || true")[1])
           raise AssertionError(
-              "lojix deployment did not activate the expected profile within 600 seconds"
+              "lojix deployment did not reach the expected Succeeded terminal and profile within 600 seconds"
           )
 
       # --- ASSERT: the target's system profile generation IS the lojix-deployed
@@ -1389,25 +1425,6 @@ assertModel (
       # the live generation lands in the `Current` slot (the terminal deployed
       # state the query exposes), so `Current` is the durable state this proves.
       expected_slot = "Current"
-      deployer.wait_until_succeeds(
-          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
-          f"| grep -F {expected_closure}",
-          timeout=600,
-      )
-      deployer.wait_until_succeeds(
-          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
-          "| grep -F Completed",
-          timeout=600,
-      )
-      deployer.wait_until_succeeds(
-          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
-          "| grep -F Succeeded",
-          timeout=600,
-      )
-      final_query = query_node()
       print("durable deploy state:", final_query)
       assert "Queried" in final_query, f"ordinary query was not accepted: {final_query}"
       # Assert the schema-owned positional Generation fragment — node + kind +
@@ -1452,6 +1469,17 @@ assertModel (
       deployer.succeed(
           f"test \"$(nix-store --query --outputs {expected_derivation})\" = {expected_closure}"
       )
+      # Activation remains Lojix's real SSH path. The fixture records each
+      # daemon child without altering its arguments or outcome, making a future
+      # Activate failure concrete while proving this success staged the expected
+      # profile through nix-env and switch-to-configuration boot.
+      daemon_ssh_capture = deployer.succeed(
+          "cat /run/lojix/ssh-command-capture.log"
+      )
+      assert "=== C6 lojix daemon SSH command ===" in daemon_ssh_capture, daemon_ssh_capture
+      assert f"nix-env -p /nix/var/nix/profiles/system --set {expected_closure}" in daemon_ssh_capture, daemon_ssh_capture
+      assert f"{expected_closure}/bin/switch-to-configuration boot" in daemon_ssh_capture, daemon_ssh_capture
+      assert daemon_ssh_capture.count("exit-status=0") >= 3, daemon_ssh_capture
 
       print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
             "the target's system profile generation is the deployed closure.")
