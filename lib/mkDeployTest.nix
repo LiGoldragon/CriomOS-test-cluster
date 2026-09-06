@@ -1118,16 +1118,19 @@ let
           # separately materialized output is registered with every runtime
           # requisite before Lojix starts.  `--check-validity` checks Nix's
           # database registration without rehashing path contents; import
-          # already verifies the copied NARs.  Its recorded deriver must be the
-          # expected .drv; Lojix's real Eval then creates that derivation before
-          # its authoritative Build, which the fixture observes separately.
+          # already verifies the copied NARs.  `additionalPaths` registers the
+          # realised runtime closure but does not retain its producer metadata;
+          # Lojix's real Eval creates the expected derivation before its
+          # authoritative Build, which the fixture observes separately.
+          echo "C6 deployer store output validity started output=${deployedToplevel}"
           nix-store --check-validity "${deployedToplevel}"
           requisites=/run/lojix/c6-mercury-requisites
           nix-store --query --requisites "${deployedToplevel}" > "$requisites"
           test -s "$requisites"
+          echo "C6 deployer store requisite validity started"
           ${pkgs.findutils}/bin/xargs -r -n 256 nix-store --check-validity < "$requisites"
-          test "$(nix-store --query --deriver "${deployedToplevel}")" = "${deployedToplevelDrv}"
-          echo "C6 deployer store preseed verified output=${deployedToplevel} derivation=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
+          registered_deriver="$(nix-store --query --deriver "${deployedToplevel}")"
+          echo "C6 deployer store preseed valid output=${deployedToplevel} registeredDeriver=$registered_deriver expectedDeriver=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
           # Place the transparent capture shim only in the daemon's inherited
@@ -1434,9 +1437,21 @@ assertModel (
       ${vmNode}.succeed(f"test -x {expected_closure}/bin/switch-to-configuration")
       ${vmNode}.succeed(f"test -e {expected_closure}/init")
       ${vmNode}.succeed(f"test -e {expected_closure}/activate")
-      # it is genuinely the deployed closure in the target's store (the daemon's
-      # nix copy --to ssh-ng landed it there node-to-node).
-      ${vmNode}.succeed(f"test \"$(nix-store --query --deriver {expected_closure})\" = {expected_derivation}")
+      # Copying a realised closure does not preserve producer metadata in the
+      # destination store. The daemon-only capture proves the actual Lojix Eval
+      # and Build calls; querying the Eval-created derivation at the deployer
+      # proves its exact realised output before the target profile asserts the
+      # copied closure.
+      daemon_nix_capture = deployer.succeed(
+          "cat /run/lojix/nix-command-capture.log"
+      )
+      assert "argv=eval " in daemon_nix_capture, daemon_nix_capture
+      assert "argv=build --no-link --print-out-paths " in daemon_nix_capture, daemon_nix_capture
+      assert expected_derivation in daemon_nix_capture, daemon_nix_capture
+      assert expected_closure in daemon_nix_capture, daemon_nix_capture
+      deployer.succeed(
+          f"test \"$(nix-store --query --outputs {expected_derivation})\" = {expected_closure}"
+      )
 
       print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
             "the target's system profile generation is the deployed closure.")
