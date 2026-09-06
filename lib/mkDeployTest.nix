@@ -465,13 +465,20 @@ let
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          nix flake metadata --refresh --json "${deployFlakeReference}" \
-            | ${pkgs.jq}/bin/jq -e \
-              --arg source "${deployFlakeSource}" \
-              --arg nar_hash "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc=" \
-              --arg revision "1eed8642f9ec6b91bea582e1beacacd5a66157fe" \
-              '.path == $source and .locked.narHash == $nar_hash and .revision == $revision' \
-            >/dev/null
+          metadata=/run/lojix/root-flake-metadata.json
+          for _ in $(seq 1 30); do
+            if nix flake metadata --refresh --json "${deployFlakeReference}" > "$metadata"; then
+              break
+            fi
+            sleep 1
+          done
+          test -s "$metadata"
+          ${pkgs.jq}/bin/jq -e \
+            --arg source "${deployFlakeSource}" \
+            --arg nar_hash "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc=" \
+            --arg revision "1eed8642f9ec6b91bea582e1beacacd5a66157fe" \
+            '.path == $source and .locked.narHash == $nar_hash and .revision == $revision' \
+            "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
