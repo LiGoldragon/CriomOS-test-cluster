@@ -103,7 +103,7 @@ let
   # The normal CriomOS root owns all four materialized input names: `horizon`,
   # `system`, `deployment`, and `secrets`. The smoke driver remains a separate
   # test-cluster checkout; it cannot stand in for the RequireImmutable source.
-  deployFlakeReference = "github:LiGoldragon/CriomOS?rev=d15c1ebbbf2ff1fe6696441d91075fd228d13d43";
+  deployFlakeReference = "github:LiGoldragon/CriomOS?rev=82f6bf5958f999c97c4d81f985d4ac91bdbc2340";
   deployFlakeSource = inputs.criomos.outPath;
   # This closure came from a real Lojix BuildOnly materialization of the exact
   # definition below, `(fieldlab, mercury)`, BaseHost, NoSecrets, and the same
@@ -142,7 +142,7 @@ let
   # a NoSecrets fixture and unmatched routes are rejected.
   sourceReplayAddress = "192.168.1.3";
   sourceReplaySpecs = [
-    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "d15c1ebbbf2ff1fe6696441d91075fd228d13d43"; narHash = "sha256-dQkblZsh0/uGm17gDhIGe8emVZLGljvofKK0XsBWSl4="; lastModified = 1788669531; }
+    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "82f6bf5958f999c97c4d81f985d4ac91bdbc2340"; narHash = "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y="; lastModified = 1788669988; }
     { owner = "LiGoldragon"; repo = "CriomOS-home"; revision = "e71729ec6ebccce9d853227aea549712344a743c"; narHash = "sha256-Kq0V2L6CvXArCTOZdOYf7IvRd6BDxqemkYpAaTGuqSM="; lastModified = 1788669393; }
     { owner = "LiGoldragon"; repo = "CriomOS-lib"; revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642"; narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0="; lastModified = 1786574672; }
     { owner = "LiGoldragon"; repo = "CriomOS-pkgs"; revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d"; narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q="; lastModified = 1786664856; }
@@ -598,9 +598,9 @@ let
           test -s "$metadata"
           ${pkgs.jq}/bin/jq -e \
             --arg source "${deployFlakeSource}" \
-            --arg nar_hash "sha256-dQkblZsh0/uGm17gDhIGe8emVZLGljvofKK0XsBWSl4=" \
-            --arg revision "d15c1ebbbf2ff1fe6696441d91075fd228d13d43" \
-            --argjson last_modified 1788669531 \
+            --arg nar_hash "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y=" \
+            --arg revision "82f6bf5958f999c97c4d81f985d4ac91bdbc2340" \
+            --argjson last_modified 1788669988 \
             '.path == $source and .locked.narHash == $nar_hash and .revision == $revision and .locked.lastModified == $last_modified' \
             "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
