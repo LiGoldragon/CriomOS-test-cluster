@@ -985,7 +985,10 @@ let
         serviceConfig = {
           Type = "simple";
           Restart = "no";
-          TimeoutStartSec = "120s";
+          # The bounded root-metadata diagnostic gets 90 seconds after the
+          # measured replay prelude. Leave service startup time for that stage
+          # and the configuration writer without changing runtime behavior.
+          TimeoutStartSec = "180s";
           StateDirectory = "lojix";
           RuntimeDirectory = "lojix";
         };
@@ -1087,12 +1090,22 @@ let
             exit 1
           fi
           metadata=/run/lojix/root-flake-metadata.json
-          for _ in $(seq 1 30); do
-            if nix flake metadata --refresh --json "${deployFlakeReference}" > "$metadata"; then
-              break
-            fi
-            sleep 1
-          done
+          metadata_stderr=/run/lojix/root-flake-metadata.stderr
+          metadata_started="$(${pkgs.coreutils}/bin/date --iso-8601=seconds)"
+          echo "C6 root metadata started at $metadata_started reference=${deployFlakeReference}"
+          set +e
+          ${pkgs.coreutils}/bin/timeout 90s \
+            nix --log-format raw -vvv flake metadata --refresh --json "${deployFlakeReference}" \
+            > "$metadata" 2> "$metadata_stderr"
+          metadata_status=$?
+          set -e
+          metadata_finished="$(${pkgs.coreutils}/bin/date --iso-8601=seconds)"
+          echo "C6 root metadata finished at $metadata_finished status=$metadata_status"
+          if test "$metadata_status" -ne 0; then
+            echo "=== C6 root metadata stderr (last 400 lines) ===" >&2
+            ${pkgs.coreutils}/bin/tail -n 400 "$metadata_stderr" >&2
+            exit "$metadata_status"
+          fi
           test -s "$metadata"
           ${pkgs.jq}/bin/jq -e \
             --arg source "${deployFlakeSource}" \
@@ -1182,7 +1195,9 @@ assertModel (
       # Surface that setup's journal early if configuration writing or the
       # hermetic flake cache preparation fails; the actual socket assertions
       # below remain the service-readiness boundary.
-      for _ in range(120):
+      # This encompasses the measured replay prelude and the one bounded
+      # root-metadata preflight; it is not a deployment-terminal timeout.
+      for _ in range(150):
           if deployer.execute("test -S /run/lojix/ordinary.sock && test -S /run/lojix/owner.sock")[0] == 0:
               break
           if deployer.execute("systemctl --quiet is-failed lojix-daemon.service")[0] == 0:
@@ -1192,7 +1207,7 @@ assertModel (
           journal = deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1]
           print("=== lojix daemon startup journal ===")
           print(journal)
-          raise AssertionError("lojix daemon did not create both sockets within 120 seconds")
+          raise AssertionError("lojix daemon did not create both sockets within 150 seconds")
       if deployer.execute("systemctl --quiet is-failed lojix-daemon.service")[0] == 0:
           journal = deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1]
           print("=== failed lojix daemon startup journal ===")
