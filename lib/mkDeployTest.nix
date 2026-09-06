@@ -133,12 +133,63 @@ let
     [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources
   );
 
-  # Direct immutable github: roots bypass registries and Nix has no supported
-  # cache-import interface. C6 replays only the exact GitHub archive endpoint
-  # in a third test VM. The submitted Lojix reference remains github:, and the
-  # deployer verifies Nix's resolved source path and narHash before it starts.
+  # Direct immutable github: roots bypass registries, and Nix has no supported
+  # fetcher-cache import interface. C6 therefore replays only the finite GitHub
+  # code-source set observed in a cache-disabled evaluation of the exact
+  # materialized Mercury output, plus its realised selected closure. Each entry
+  # below has a locked revision/NAR hash and is archived deterministically from
+  # that exact fetched source. No secret or data authority is included: this is
+  # a NoSecrets fixture and unmatched routes are rejected.
   sourceReplayAddress = "192.168.1.3";
-  sourceReplayRoute = "/LiGoldragon/CriomOS/archive/add8a445052e9517a10eff7877ed7608aca871b2.tar.gz";
+  sourceReplaySpecs = [
+    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "add8a445052e9517a10eff7877ed7608aca871b2"; narHash = "sha256-TOnQ7iBNIdVHDodwhybwyCDhSPoZwdOd8s5pLxtbh0E="; }
+    { owner = "LiGoldragon"; repo = "CriomOS-home"; revision = "be20529823792d525659053399c31c040ce94bfb"; narHash = "sha256-WAzepFx2OoZbooYbL9KsqSLi3dGducox92XTHdrdweY="; }
+    { owner = "LiGoldragon"; repo = "CriomOS-lib"; revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642"; narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0="; }
+    { owner = "LiGoldragon"; repo = "CriomOS-pkgs"; revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d"; narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q="; }
+    { owner = "LiGoldragon"; repo = "brightness-ctl"; revision = "5274f9937a8b73bd4b1d5fd9a2a0e7199ad574a3"; narHash = "sha256-isNm6Hl/rDwIUHYPtBFbqdVwO2itK2oTzq//uofKW/I="; }
+    { owner = "LiGoldragon"; repo = "clavifaber"; revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab"; narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4="; }
+    { owner = "LiGoldragon"; repo = "kameo"; revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01"; narHash = "sha256-yEide3elYr0mtRUStsD3AlOwdl/sKWtslj3vBp8VzVE="; }
+    { owner = "LiGoldragon"; repo = "nixpkgs"; revision = "0e251e24a4f24e036a084b6b4b2d2491af4167f4"; narHash = "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU="; }
+    { owner = "LiGoldragon"; repo = "pi-session-namer"; revision = "76a145939d8fc52bda07117e7c04ad66f84f2114"; narHash = "sha256-kS5nnRQA9hSOH3K7yaDPBK+RGfk/FSWpH0QtgJHgQG0="; }
+    { owner = "LiGoldragon"; repo = "rust-build"; revision = "1bcdafd4590952f73fada56b0507c64192fd6327"; narHash = "sha256-Xz52U4d6S6Z4QeAqW82HSfnEkOXfd94LIBPSVN0WK/0="; }
+    { owner = "Mic92"; repo = "sops-nix"; revision = "a8627b21b9107c5711c96b84f32a9a4b3d45295f"; narHash = "sha256-gkig4nPi1CWc4Z50GBsjE4ygSE7hMpl/TwID2an2Cck="; }
+    { owner = "astro"; repo = "microvm.nix"; revision = "71beea0076cd46dafcee97a5a2e7d00cbba5bd2f"; narHash = "sha256-4UFJOVGpaYtHW5yasSv80MaJxTBYdk2zyf3jhKtt0wA="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-claude"; revision = "d62b3c85547b8b83fdfe06afb38968646fe813b8"; narHash = "sha256-9vi8GnsEVf34p4NvUE6CBRPvqxic41qaeWWbft/el7o="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-codex"; revision = "ea1c5b538c95b89af3fd36344396779e2eadbadb"; narHash = "sha256-QguRN26/i5Stua+K6wiYAt6pH+wX6jO684Va5VHRUmA="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-core"; revision = "8316cbab548f422ad11c78ed887fabeef94817c1"; narHash = "sha256-9418pR0tYDGPbf8GknIxAUyDfIN2RdfE3lBwelamLbA="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-opencode"; revision = "9d81100ea074f68f6466656c65536504209eb060"; narHash = "sha256-jVVIJqJ5O9IuA8K6eU8oCRfBtV68NV47vTHesSktp0s="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-orchestrator"; revision = "a7e16bd4386726002ab6880b35ebacdeef00fd0d"; narHash = "sha256-nmaAkcUcZ8RVZn1qJK37kEKVBs2w49s72pMXU7wi0SM="; }
+    { owner = "dataforxyz"; repo = "agent-intercom-pi"; revision = "b6f8f9d08c8c5ec7141a0258ce61cda59d327a20"; narHash = "sha256-b1pif2LgGmcPJFkNKEu0ppjjdllEHLb6oa+6fLA/y/o="; }
+    { owner = "earendil-works"; repo = "pi"; revision = "53fa77ccd8a279eb87e92294ef3687b03ff80112"; narHash = "sha256-lg+I4S/aAjazjhGZU567ow+rksoNiqOqjHl//TjAMes="; }
+    { owner = "googleworkspace"; repo = "cli"; revision = "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd"; narHash = "sha256-YyNIHbyZrLlXYtWxZY8Um19MsnLharmS+nWGWO89fsA="; }
+    { owner = "ipetkov"; repo = "crane"; revision = "2c71e194474d13de031d729b729c968ddbe3507f"; narHash = "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw="; }
+    { owner = "ipetkov"; repo = "crane"; revision = "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37"; narHash = "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0="; }
+    { owner = "nix-community"; repo = "fenix"; revision = "6914a98b7864cb3ef33cb0a2581f8aed3d354e48"; narHash = "sha256-B3GatmIZGQCnJkYoes3a5OqsMNexf0PO3fpeDJDZND4="; }
+    { owner = "nix-community"; repo = "home-manager"; revision = "c554d3441f725537854e877519f01cbd60680174"; narHash = "sha256-ybGtuwGKTUCefKYsplzvw4xcCqznto0c7BaiQhgILtA="; }
+    { owner = "nix-community"; repo = "nix-vscode-extensions"; revision = "5ae7b47dd1d2210a1bc62cd75a7407f0794d7193"; narHash = "sha256-pf5m6/fmbeo8NMcsRcWi+vpeye9xcuuRa/H2+HHJLU8="; }
+    { owner = "nix-systems"; repo = "default"; revision = "da67096a3b9bf56a91d16901293e51ba5b49a27e"; narHash = "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768="; }
+    { owner = "numtide"; repo = "blueprint"; revision = "56131e8628f173d24a27f6d27c0215eff57e40dd"; narHash = "sha256-Dt9t1TGRmJFc0xVYhttNBD6QsAgHOHCArqGa0AyjrJY="; }
+    { owner = "numtide"; repo = "flake-utils"; revision = "11707dc2f618dd54ca8739b309ec4fc024de578b"; narHash = "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI="; }
+    { owner = "oxalica"; repo = "rust-overlay"; revision = "892c035d7c2ff75acd5da10424a47ab454e1f3dc"; narHash = "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k="; }
+  ];
+  sourceReplayEntries = lib.genList (
+    index:
+    let
+      spec = builtins.elemAt sourceReplaySpecs index;
+    in
+    spec
+    // {
+      inherit index;
+      route = "/${spec.owner}/${spec.repo}/archive/${spec.revision}.tar.gz";
+      source = (builtins.fetchTree {
+        type = "github";
+        owner = spec.owner;
+        repo = spec.repo;
+        rev = spec.revision;
+        narHash = spec.narHash;
+      }).outPath;
+    }
+  ) (builtins.length sourceReplaySpecs);
   sourceReplayTls =
     pkgs.runCommand "c6-source-replay-tls"
       {
@@ -153,39 +204,57 @@ let
         -subj /CN=github.com \
         -addext subjectAltName=DNS:github.com
       '';
-  sourceReplayArchive =
-    pkgs.runCommand "c6-source-replay-archive"
+  sourceReplayArchives =
+    pkgs.runCommand "c6-source-replay-archives"
       {
         nativeBuildInputs = [
+          pkgs.coreutils
           pkgs.gnutar
           pkgs.gzip
         ];
       }
       ''
-        mkdir -p "$out/source"
-        cp -a ${deployFlakeSource}/. "$out/source/"
-        tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
-          -C "$out" -cf - source | gzip -n > "$out/archive.tar.gz"
+        mkdir -p "$out/archives"
+        : > "$out/manifest.tsv"
+        ${lib.concatMapStringsSep "\n" (
+          entry: ''
+            work="$TMPDIR/source-${toString entry.index}"
+            mkdir -p "$work/source"
+            cp -a ${entry.source}/. "$work/source/"
+            archive="$out/archives/${toString entry.index}.tar.gz"
+            tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+              -C "$work" -cf - source | gzip -n > "$archive"
+            archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
+            printf '%s\t%s\t%s\t%s\n' \
+              '${entry.route}' '${entry.narHash}' "$archive_hash" \
+              'archives/${toString entry.index}.tar.gz' >> "$out/manifest.tsv"
+          ''
+        ) sourceReplayEntries}
       '';
   sourceReplayServer = pkgs.writeText "c6-source-replay.py" ''
     import http.server
     import os
     import ssl
 
-    ARCHIVE = "${sourceReplayArchive}/archive.tar.gz"
-    ROUTE = "${sourceReplayRoute}"
+    ARCHIVES = {
+      ${lib.concatMapStringsSep "\n" (
+        entry:
+        "${builtins.toJSON entry.route}: ${builtins.toJSON "${sourceReplayArchives}/archives/${toString entry.index}.tar.gz"},"
+      ) sourceReplayEntries}
+    }
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
-            if self.path != ROUTE:
-                self.send_error(404, "C6 source replay permits only the pinned archive route")
+            archive = ARCHIVES.get(self.path)
+            if archive is None:
+                self.send_error(404, "C6 source replay permits only locked archive routes")
                 return
             self.send_response(200)
             self.send_header("Content-Type", "application/x-gzip")
-            self.send_header("Content-Length", str(os.path.getsize(ARCHIVE)))
+            self.send_header("Content-Length", str(os.path.getsize(archive)))
             self.end_headers()
-            with open(ARCHIVE, "rb") as archive:
-                self.wfile.write(archive.read())
+            with open(archive, "rb") as source_archive:
+                self.wfile.write(source_archive.read())
 
         def log_message(self, format, *args):
             print("C6 source replay: " + format % args, flush=True)
@@ -462,23 +531,33 @@ let
           # points UserKnownHostsFile here).
           install -d -m 700 /root/.ssh
           touch /root/.ssh/known_hosts
-          # Fetch the direct-GitHub root through the fixture-only TLS replay
-          # before starting the daemon. A top-level github: URI carries no
-          # narHash, so require Nix's resolved metadata to match the exact
-          # lock-derived path, hash, and revision. Lojix then evaluates the
-          # unchanged URI under the same Nix configuration.
+          # Verify every finite replay entry through the VM's actual TLS path
+          # before starting the daemon. The manifest binds its exact GitHub
+          # route to the lock-derived NAR hash and deterministic archive hash;
+          # the server has no fallback route. A top-level github: URI itself
+          # carries no NAR hash, so separately require Nix's resolved root
+          # metadata to match the original source, locked hash, and revision.
+          # Lojix then evaluates that unchanged URI under this same Nix setup.
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
-          mkdir -p "$XDG_CACHE_HOME"
-          for _ in $(seq 1 30); do
-            if ${pkgs.curl}/bin/curl --fail --silent --show-error \
-              --cacert "${sourceReplayTls}/cert.pem" \
-              "https://github.com${sourceReplayRoute}" \
-              --output /run/lojix/root-flake-archive.tar.gz; then
-              break
-            fi
-            sleep 1
-          done
-          test -s /run/lojix/root-flake-archive.tar.gz
+          mkdir -p "$XDG_CACHE_HOME" /run/lojix/source-replay
+          replayed_count=0
+          while IFS="$(printf '\t')" read -r route nar_hash archive_hash archive_rel; do
+            replayed_count=$((replayed_count + 1))
+            archive="/run/lojix/source-replay/$replayed_count.tar.gz"
+            for _ in $(seq 1 30); do
+              if ${pkgs.curl}/bin/curl --fail --silent --show-error \
+                --cacert "${sourceReplayTls}/cert.pem" \
+                "https://github.com$route" --output "$archive"; then
+                break
+              fi
+              sleep 1
+            done
+            test -s "$archive"
+            actual_archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
+            test "$actual_archive_hash" = "$archive_hash"
+            echo "C6 source replay verified $route narHash=$nar_hash archiveSha256=$archive_hash"
+          done < "${sourceReplayArchives}/manifest.tsv"
+          test "$replayed_count" = "${toString (builtins.length sourceReplayEntries)}"
           if ${pkgs.curl}/bin/curl --fail --silent --show-error \
             --cacert "${sourceReplayTls}/cert.pem" \
             https://github.com/c6-source-replay-unmatched \
@@ -653,10 +732,41 @@ assertModel (
       # link — poll it directly until it becomes the deployed closure (the daemon's
       # `nix-env --set` on the target). This is the report-46/48 approach: observe
       # the deploy's durable effect rather than the silent daemon.
-      ${vmNode}.wait_until_succeeds(
-          f"test \"$(readlink -f /nix/var/nix/profiles/system)\" = {expected_closure}",
-          timeout=600,
-      )
+      # Poll the schema-owned durable deployment record before waiting for the
+      # target profile. A failed/rejected pipeline must surface its current
+      # `DeploymentLifecycle.[ Failed Rejected ... ]` and
+      # `DeploymentTerminal.[ Failed.DeploymentFailure
+      # Rejected.DeploymentTerminalReason Succeeded ]` state promptly, rather
+      # than making a known failure consume the whole profile timeout.
+      for _ in range(600):
+          observed_query = query_node()
+          if "Failed" in observed_query or "Rejected" in observed_query:
+              daemon_journal = deployer.execute(
+                  "journalctl -u lojix-daemon.service --no-pager"
+              )[1]
+              print("durable failed/rejected deployment state:", observed_query)
+              print("=== lojix daemon deployment journal ===")
+              print(daemon_journal)
+              raise AssertionError(
+                  "lojix deployment reached a durable Failed or Rejected terminal state"
+              )
+          profile_target = ${vmNode}.execute(
+              "readlink -f /nix/var/nix/profiles/system"
+          )[1].strip()
+          if profile_target == expected_closure:
+              break
+          deployer.sleep(1)
+      else:
+          final_wait_query = query_node()
+          daemon_journal = deployer.execute(
+              "journalctl -u lojix-daemon.service --no-pager"
+          )[1]
+          print("durable deployment state after profile timeout:", final_wait_query)
+          print("=== lojix daemon deployment journal ===")
+          print(daemon_journal)
+          raise AssertionError(
+              "lojix deployment did not activate the expected profile within 600 seconds"
+          )
 
       # --- ASSERT: the target's system profile generation IS the lojix-deployed
       # closure (the microvm-scoped generation-activation: /nix/var/nix/profiles/
