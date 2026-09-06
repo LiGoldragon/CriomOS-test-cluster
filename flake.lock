@@ -2628,17 +2628,17 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1787488432,
-        "narHash": "sha256-YNKaRL1MNnHE5rHh2RCvXhydtnvwmU/zPSnuavMYEG0=",
+        "lastModified": 1788654241,
+        "narHash": "sha256-/IVzu1dpp06ym37t4wDLJL8ysuhiuXVRFMwl5toW7nE=",
         "owner": "LiGoldragon",
         "repo": "lojix",
-        "rev": "0105f8d8f18dd91291e0a0fbe828e84ceda65714",
+        "rev": "7e29c37f51092e5a20abf88c670aabd2acee6e52",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
         "repo": "lojix",
-        "rev": "0105f8d8f18dd91291e0a0fbe828e84ceda65714",
+        "rev": "7e29c37f51092e5a20abf88c670aabd2acee6e52",
         "type": "github"
       }
     },

@@ -21,14 +21,10 @@
     horizon-config.inputs.nixpkgs.follows = "nixpkgs";
     horizon.inputs.nixpkgs.follows = "nixpkgs";
 
-    # The lojix deploy orchestrator — pinned to main (carrying the <drv>^*
-    # output-selector fix, commit efbc5ea, that the live e2e caught: build
-    # must realise the system, never copy/activate the bare .drv). The C6
-    # smoke test builds the FIXED daemon + the meta-lojix / lojix / write-
-    # configuration CLIs into the deployer node from this input. lojix pins
-    # its own nixpkgs (its crane/fenix toolchain); we do NOT follow ours onto
-    # it — the daemon is a self-contained release artifact.
-    lojix.url = "github:LiGoldragon/lojix/0105f8d8f18dd91291e0a0fbe828e84ceda65714";
+    # The C6 deploy smoke runs the published typed Datom Lojix release. Its
+    # daemon and both framed-signal clients are self-contained artifacts, so
+    # this input keeps Lojix's own toolchain pins.
+    lojix.url = "github:LiGoldragon/lojix/7e29c37f51092e5a20abf88c670aabd2acee6e52";
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";
@@ -309,7 +305,7 @@
             # generation becomes the lojix-deployed closure (a real
             # nixos-system, never the bare .drv). Psyche-scoped to
             # generation-activation (NOT the full BootOnce reboot). See
-            # lib/mkDeployTest.nix + lib/deploy-flake.nix. ONE concept,
+            # lib/mkDeployTest.nix. ONE concept,
             # PATTERN comment there (Spirit [xxgp]); the integration risks
             # (offline eval+build, address resolution, ssh-ng/store-copy, silent
             # daemon) are unblocked IN the test (Spirit [dqg3]). It proves a

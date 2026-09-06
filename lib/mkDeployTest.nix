@@ -21,9 +21,9 @@
 #       CLIs present. The deploy key authorises root@target; the target's
 #       <node>.<cluster>.criome address resolves (networking.hosts) to the
 #       target's test-network IP; ssh-ng host-key trust is pre-seeded. The whole
-#       offline deploy-flake eval+build closure is pinned into its store
-#       (deploy-flake.nix), so the daemon's `nix eval`/`nix build` are fully
-#       offline — production-identical commands, hermetic inputs.
+#       immutable root test-cluster flake and its locked input closure are
+#       pinned into its store, so the daemon evaluates the same revision through
+#       its production GitHub reference entirely offline.
 #   - target: the vmNode (mercury) as a REAL CriomOS nixosSystem built from its
 #       horizon PROJECTION (the same projections-match-fieldlab pins), plus the
 #       test-substrate UEFI guestModule: writable store, require-sigs=false,
@@ -36,7 +36,7 @@
 #
 # THE DEPLOY + ASSERTION:
 #   The deployer submits a FullOs `Boot` Deploy of the target's config
-#   (build_attribute = the deploy flake's `systemToplevel`, which IS the
+#   (build_attribute = the root flake's `mercury-toplevel`, which IS the
 #   target's projected system — cluster-data-generated, not hand-written). The
 #   daemon runs `nix-env --set <closure> && switch-to-configuration boot` on the
 #   target: this SETS the system profile generation (the C6 ground truth) and
@@ -53,9 +53,10 @@
 #
 # THE INTEGRATION RISKS, HEAD-ON (Spirit [dqg3] — unblock the blocker IN the
 # test, do not just report "blocked"):
-#   1. OFFLINE eval+build: solved by deploy-flake.nix (clavifaber stub + pinned
-#      closure + store-residence-by-narHash). The daemon's eval/build run with
-#      the node's offline nix config; no network, no substituters.
+#   1. OFFLINE eval+build: the immutable root flake, its locked input closure,
+#      and selected mercury closure are present in the deployer store. The
+#      daemon's eval/build run with the node's offline Nix config; no network or
+#      substituters.
 #   2. ADDRESS resolution: networking.hosts maps <node>.<cluster>.criome to the
 #      target's test IP on BOTH nodes; the deployer reaches the target by that
 #      exact name lojix targets.
@@ -84,21 +85,50 @@ let
 
   readHorizon = node: builtins.fromJSON (builtins.readFile "${self}/fixtures/horizon/${node}.json");
 
-  deployFlake = import ./deploy-flake.nix {
-    inherit
-      inputs
-      pkgs
-      self
-      system
-      ;
-  };
-
   lojixPackages = inputs.lojix.packages.${system};
   # The real fixed daemon (lojix main, <drv>^* fix) and the CLIs
   # (meta-lojix / lojix / lojix-write-configuration, built with their text CLI
   # feature so the test can submit/query typed requests).
   lojixDaemon = lojixPackages.daemon-binary;
   lojixClis = lojixPackages.default;
+  horizonCompose = inputs.horizon.packages.${system}.horizon-compose;
+  horizonDefinition = inputs.horizon-config.lib.composeHorizonDefinition {
+    inherit system horizonCompose;
+    configuration = ./../clusters/fieldlab-horizon-configuration.datom;
+    cluster = ./../clusters/fieldlab-definition.datom;
+  };
+  horizonDefinitionPath = inputs.horizon-config.lib.horizonDefinitionPath horizonDefinition;
+
+  # This committed fixture revision owns `packages.<system>.mercury-toplevel`.
+  # The smoke's evolving driver stays outside that deployment source, while its
+  # selected public Horizon input is still composed from this checked-out data.
+  deployFlakeReference = "github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe";
+  deployFlakeSource = self.outPath;
+  deployedToplevel = self.packages.${system}.mercury-toplevel;
+
+  # The immutable root flake and every direct input are present in the
+  # deployer store before the daemon evaluates the exact GitHub revision.
+  # CriomOS itself has nested inputs, so retain its complete input closure too.
+  directInputSources = inputs.nixpkgs.lib.concatMap (
+    input: inputs.nixpkgs.lib.optional (input ? outPath) input.outPath
+  ) (builtins.attrValues (builtins.removeAttrs inputs [ "self" ]));
+  criomosInputSources =
+    let
+      walk =
+        flake:
+        let
+          nested = flake.inputs or { };
+        in
+        inputs.nixpkgs.lib.concatMap (
+          input:
+          inputs.nixpkgs.lib.optional (input ? outPath) input.outPath
+          ++ inputs.nixpkgs.lib.optionals (input ? inputs) (walk input)
+        ) (builtins.attrValues nested);
+    in
+    walk inputs.criomos;
+  deployFlakeInputSources = inputs.nixpkgs.lib.unique (
+    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources
+  );
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
   # half lives only on the deployer; public half authorises root on the target.
@@ -161,16 +191,6 @@ let
     substrate = "uefi";
     deployKey = deployPublicKey;
   };
-
-  # The deployed system toplevel — re-derived in-process exactly as the deploy
-  # flake builds it (its closure is what the daemon's offline `nix build
-  # <drv>^*` needs). Depending on it pins that closure into the deployer node
-  # store. The deploy flake source carries remote input URLs plus a generated
-  # lock copied from this flake; its offline eval resolves the store-resident
-  # input trees by narHash and produces the deployed nixos-system, which the
-  # test discovers from the daemon's durable Query state.
-  deployedToplevel = deployFlake.toplevelFor vmNode;
-  deployFlakeSource = deployFlake.sourceFor vmNode;
 
   # The target guest: a real CriomOS nixosSystem from the projection + the UEFI
   # substrate. This is the BASE the target boots; lojix deploys the (identical-
@@ -243,18 +263,14 @@ let
     }:
     {
       # The whole offline deploy closure pinned into the deployer's store so the
-      # daemon's `nix eval`/`nix build` resolve with NO network: the deploy
-      # flake source (a generated store source carried as the Deploy payload),
-      # the realised deployed system (so `nix build <drv>^*` is a store hit),
-      # and every input source the eval reads by narHash. This is not a
-      # workspace checkout override: the generated flake itself uses remote
-      # input URLs plus a copied lock. The remaining store-source payload is the
-      # hermetic test's transport for the synthetic deploy flake.
+      # daemon's `nix eval`/`nix build` resolve with NO network: the exact
+      # immutable root flake source, the realised mercury system (so `nix build
+      # <drv>^*` is a store hit), and every locked input source are present.
       system.extraDependencies = [
-        deployFlakeSource
         deployedToplevel
+        horizonDefinitionPath
       ]
-      ++ deployFlake.evalSources;
+      ++ deployFlakeInputSources;
 
       # The real CLIs (meta-lojix / lojix / lojix-write-configuration) +
       # nix/openssh for the daemon's effects.
@@ -370,9 +386,9 @@ let
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          nix flake archive --offline "path:${deployFlakeSource}" >/dev/null 2>&1 || true
+          nix flake archive --offline "${deployFlakeReference}" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
-            "(ConfigurationWriteRequest (/run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix (${clusterName} ${hostNode} Hermetic github:LiGoldragon/CriomOS-test-cluster /dev/null) /run/lojix/startup.rkyv))"
+            "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -469,8 +485,9 @@ assertModel (
       deploy_reply = deployer.succeed(
           "LOJIX_OWNER_SOCKET=/run/lojix/owner.sock "
           "${lojixClis}/bin/meta-lojix "
-          "'(Deploy (System (${cluster} ${vmNode} FullOs /dev/null "
-          "path:${deployFlakeSource} Boot None [] (Some ${deployFlake.buildAttribute}))))'"
+          "'Deploy.Host.{ ${clusterName} ${vmNode} BaseHost ${horizonDefinitionPath} "
+          "NoSecrets ${deployFlakeReference} { ssh-ng://root@${criomeDomainName} root@${criomeDomainName} } "
+          "Horizon { packages.${system}.mercury-toplevel } NixosSystemdBootV1 SetBootProfile RequireImmutable None [] }'"
       )
       print("deploy reply:", deploy_reply)
       assert "Deployed" in deploy_reply, f"deploy not accepted: {deploy_reply}"
@@ -482,14 +499,12 @@ assertModel (
           return deployer.succeed(
               "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
               "${lojixClis}/bin/lojix "
-              "'(Query (ByNode (${cluster} ${vmNode} None)))'"
+              "'Query.ByNode.{ ${clusterName} ${vmNode} None }'"
           )
 
       # The EXACT closure the daemon evals+builds — the deploy flake's
-      # systemToplevel, re-derived in-process (deployFlake.toplevelFor) and proven
-      # byte-identical to the daemon's eval. This is the activated-generation
-      # ground truth: the deploy is deterministic, so the target's system profile
-      # MUST become exactly this path.
+      # The immutable root flake's mercury output is the same public output the
+      # daemon evaluates. This is the activated-generation ground truth.
       expected_closure = "${deployedToplevel}"
       print("expected deployed closure:", expected_closure)
       # the <drv>^* fix: the expected artifact is a realised nixos-system dir,
@@ -536,7 +551,7 @@ assertModel (
       expected_slot = "Current"
       deployer.wait_until_succeeds(
           "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          f"${lojixClis}/bin/lojix '(Query (ByNode (${cluster} ${vmNode} None)))' "
+          f"${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
           f"| grep -F {expected_closure}",
           timeout=600,
       )
