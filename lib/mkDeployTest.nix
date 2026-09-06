@@ -137,40 +137,40 @@ let
   # fetcher-cache import interface. C6 therefore replays only the finite GitHub
   # code-source set observed in a cache-disabled evaluation of the exact
   # materialized Mercury output, plus its realised selected closure. Each entry
-  # below has a locked revision/NAR hash and is archived deterministically from
+  # below has a locked revision/NAR hash/lastModified timestamp and is archived deterministically from
   # that exact fetched source. No secret or data authority is included: this is
   # a NoSecrets fixture and unmatched routes are rejected.
   sourceReplayAddress = "192.168.1.3";
   sourceReplaySpecs = [
-    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "add8a445052e9517a10eff7877ed7608aca871b2"; narHash = "sha256-TOnQ7iBNIdVHDodwhybwyCDhSPoZwdOd8s5pLxtbh0E="; }
-    { owner = "LiGoldragon"; repo = "CriomOS-home"; revision = "be20529823792d525659053399c31c040ce94bfb"; narHash = "sha256-WAzepFx2OoZbooYbL9KsqSLi3dGducox92XTHdrdweY="; }
-    { owner = "LiGoldragon"; repo = "CriomOS-lib"; revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642"; narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0="; }
-    { owner = "LiGoldragon"; repo = "CriomOS-pkgs"; revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d"; narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q="; }
-    { owner = "LiGoldragon"; repo = "brightness-ctl"; revision = "5274f9937a8b73bd4b1d5fd9a2a0e7199ad574a3"; narHash = "sha256-isNm6Hl/rDwIUHYPtBFbqdVwO2itK2oTzq//uofKW/I="; }
-    { owner = "LiGoldragon"; repo = "clavifaber"; revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab"; narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4="; }
-    { owner = "LiGoldragon"; repo = "kameo"; revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01"; narHash = "sha256-yEide3elYr0mtRUStsD3AlOwdl/sKWtslj3vBp8VzVE="; }
-    { owner = "LiGoldragon"; repo = "nixpkgs"; revision = "0e251e24a4f24e036a084b6b4b2d2491af4167f4"; narHash = "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU="; }
-    { owner = "LiGoldragon"; repo = "pi-session-namer"; revision = "76a145939d8fc52bda07117e7c04ad66f84f2114"; narHash = "sha256-kS5nnRQA9hSOH3K7yaDPBK+RGfk/FSWpH0QtgJHgQG0="; }
-    { owner = "LiGoldragon"; repo = "rust-build"; revision = "1bcdafd4590952f73fada56b0507c64192fd6327"; narHash = "sha256-Xz52U4d6S6Z4QeAqW82HSfnEkOXfd94LIBPSVN0WK/0="; }
-    { owner = "Mic92"; repo = "sops-nix"; revision = "a8627b21b9107c5711c96b84f32a9a4b3d45295f"; narHash = "sha256-gkig4nPi1CWc4Z50GBsjE4ygSE7hMpl/TwID2an2Cck="; }
-    { owner = "astro"; repo = "microvm.nix"; revision = "71beea0076cd46dafcee97a5a2e7d00cbba5bd2f"; narHash = "sha256-4UFJOVGpaYtHW5yasSv80MaJxTBYdk2zyf3jhKtt0wA="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-claude"; revision = "d62b3c85547b8b83fdfe06afb38968646fe813b8"; narHash = "sha256-9vi8GnsEVf34p4NvUE6CBRPvqxic41qaeWWbft/el7o="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-codex"; revision = "ea1c5b538c95b89af3fd36344396779e2eadbadb"; narHash = "sha256-QguRN26/i5Stua+K6wiYAt6pH+wX6jO684Va5VHRUmA="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-core"; revision = "8316cbab548f422ad11c78ed887fabeef94817c1"; narHash = "sha256-9418pR0tYDGPbf8GknIxAUyDfIN2RdfE3lBwelamLbA="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-opencode"; revision = "9d81100ea074f68f6466656c65536504209eb060"; narHash = "sha256-jVVIJqJ5O9IuA8K6eU8oCRfBtV68NV47vTHesSktp0s="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-orchestrator"; revision = "a7e16bd4386726002ab6880b35ebacdeef00fd0d"; narHash = "sha256-nmaAkcUcZ8RVZn1qJK37kEKVBs2w49s72pMXU7wi0SM="; }
-    { owner = "dataforxyz"; repo = "agent-intercom-pi"; revision = "b6f8f9d08c8c5ec7141a0258ce61cda59d327a20"; narHash = "sha256-b1pif2LgGmcPJFkNKEu0ppjjdllEHLb6oa+6fLA/y/o="; }
-    { owner = "earendil-works"; repo = "pi"; revision = "53fa77ccd8a279eb87e92294ef3687b03ff80112"; narHash = "sha256-lg+I4S/aAjazjhGZU567ow+rksoNiqOqjHl//TjAMes="; }
-    { owner = "googleworkspace"; repo = "cli"; revision = "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd"; narHash = "sha256-YyNIHbyZrLlXYtWxZY8Um19MsnLharmS+nWGWO89fsA="; }
-    { owner = "ipetkov"; repo = "crane"; revision = "2c71e194474d13de031d729b729c968ddbe3507f"; narHash = "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw="; }
-    { owner = "ipetkov"; repo = "crane"; revision = "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37"; narHash = "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0="; }
-    { owner = "nix-community"; repo = "fenix"; revision = "6914a98b7864cb3ef33cb0a2581f8aed3d354e48"; narHash = "sha256-B3GatmIZGQCnJkYoes3a5OqsMNexf0PO3fpeDJDZND4="; }
-    { owner = "nix-community"; repo = "home-manager"; revision = "c554d3441f725537854e877519f01cbd60680174"; narHash = "sha256-ybGtuwGKTUCefKYsplzvw4xcCqznto0c7BaiQhgILtA="; }
-    { owner = "nix-community"; repo = "nix-vscode-extensions"; revision = "5ae7b47dd1d2210a1bc62cd75a7407f0794d7193"; narHash = "sha256-pf5m6/fmbeo8NMcsRcWi+vpeye9xcuuRa/H2+HHJLU8="; }
-    { owner = "nix-systems"; repo = "default"; revision = "da67096a3b9bf56a91d16901293e51ba5b49a27e"; narHash = "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768="; }
-    { owner = "numtide"; repo = "blueprint"; revision = "56131e8628f173d24a27f6d27c0215eff57e40dd"; narHash = "sha256-Dt9t1TGRmJFc0xVYhttNBD6QsAgHOHCArqGa0AyjrJY="; }
-    { owner = "numtide"; repo = "flake-utils"; revision = "11707dc2f618dd54ca8739b309ec4fc024de578b"; narHash = "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI="; }
-    { owner = "oxalica"; repo = "rust-overlay"; revision = "892c035d7c2ff75acd5da10424a47ab454e1f3dc"; narHash = "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k="; }
+    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "add8a445052e9517a10eff7877ed7608aca871b2"; narHash = "sha256-TOnQ7iBNIdVHDodwhybwyCDhSPoZwdOd8s5pLxtbh0E="; lastModified = 1788664923; }
+    { owner = "LiGoldragon"; repo = "CriomOS-home"; revision = "be20529823792d525659053399c31c040ce94bfb"; narHash = "sha256-WAzepFx2OoZbooYbL9KsqSLi3dGducox92XTHdrdweY="; lastModified = 1788661979; }
+    { owner = "LiGoldragon"; repo = "CriomOS-lib"; revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642"; narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0="; lastModified = 1786574672; }
+    { owner = "LiGoldragon"; repo = "CriomOS-pkgs"; revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d"; narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q="; lastModified = 1786664856; }
+    { owner = "LiGoldragon"; repo = "brightness-ctl"; revision = "5274f9937a8b73bd4b1d5fd9a2a0e7199ad574a3"; narHash = "sha256-isNm6Hl/rDwIUHYPtBFbqdVwO2itK2oTzq//uofKW/I="; lastModified = 1786574687; }
+    { owner = "LiGoldragon"; repo = "clavifaber"; revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab"; narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4="; lastModified = 1786576199; }
+    { owner = "LiGoldragon"; repo = "kameo"; revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01"; narHash = "sha256-yEide3elYr0mtRUStsD3AlOwdl/sKWtslj3vBp8VzVE="; lastModified = 1781859599; }
+    { owner = "LiGoldragon"; repo = "nixpkgs"; revision = "0e251e24a4f24e036a084b6b4b2d2491af4167f4"; narHash = "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU="; lastModified = 1786599213; }
+    { owner = "LiGoldragon"; repo = "pi-session-namer"; revision = "76a145939d8fc52bda07117e7c04ad66f84f2114"; narHash = "sha256-kS5nnRQA9hSOH3K7yaDPBK+RGfk/FSWpH0QtgJHgQG0="; lastModified = 1786574795; }
+    { owner = "LiGoldragon"; repo = "rust-build"; revision = "1bcdafd4590952f73fada56b0507c64192fd6327"; narHash = "sha256-Xz52U4d6S6Z4QeAqW82HSfnEkOXfd94LIBPSVN0WK/0="; lastModified = 1786574812; }
+    { owner = "Mic92"; repo = "sops-nix"; revision = "a8627b21b9107c5711c96b84f32a9a4b3d45295f"; narHash = "sha256-gkig4nPi1CWc4Z50GBsjE4ygSE7hMpl/TwID2an2Cck="; lastModified = 1786629091; }
+    { owner = "astro"; repo = "microvm.nix"; revision = "71beea0076cd46dafcee97a5a2e7d00cbba5bd2f"; narHash = "sha256-4UFJOVGpaYtHW5yasSv80MaJxTBYdk2zyf3jhKtt0wA="; lastModified = 1786300091; }
+    { owner = "dataforxyz"; repo = "agent-intercom-claude"; revision = "d62b3c85547b8b83fdfe06afb38968646fe813b8"; narHash = "sha256-9vi8GnsEVf34p4NvUE6CBRPvqxic41qaeWWbft/el7o="; lastModified = 1786398522; }
+    { owner = "dataforxyz"; repo = "agent-intercom-codex"; revision = "ea1c5b538c95b89af3fd36344396779e2eadbadb"; narHash = "sha256-QguRN26/i5Stua+K6wiYAt6pH+wX6jO684Va5VHRUmA="; lastModified = 1785440157; }
+    { owner = "dataforxyz"; repo = "agent-intercom-core"; revision = "8316cbab548f422ad11c78ed887fabeef94817c1"; narHash = "sha256-9418pR0tYDGPbf8GknIxAUyDfIN2RdfE3lBwelamLbA="; lastModified = 1785291110; }
+    { owner = "dataforxyz"; repo = "agent-intercom-opencode"; revision = "9d81100ea074f68f6466656c65536504209eb060"; narHash = "sha256-jVVIJqJ5O9IuA8K6eU8oCRfBtV68NV47vTHesSktp0s="; lastModified = 1785441928; }
+    { owner = "dataforxyz"; repo = "agent-intercom-orchestrator"; revision = "a7e16bd4386726002ab6880b35ebacdeef00fd0d"; narHash = "sha256-nmaAkcUcZ8RVZn1qJK37kEKVBs2w49s72pMXU7wi0SM="; lastModified = 1786638697; }
+    { owner = "dataforxyz"; repo = "agent-intercom-pi"; revision = "b6f8f9d08c8c5ec7141a0258ce61cda59d327a20"; narHash = "sha256-b1pif2LgGmcPJFkNKEu0ppjjdllEHLb6oa+6fLA/y/o="; lastModified = 1786488836; }
+    { owner = "earendil-works"; repo = "pi"; revision = "53fa77ccd8a279eb87e92294ef3687b03ff80112"; narHash = "sha256-lg+I4S/aAjazjhGZU567ow+rksoNiqOqjHl//TjAMes="; lastModified = 1786081693; }
+    { owner = "googleworkspace"; repo = "cli"; revision = "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd"; narHash = "sha256-YyNIHbyZrLlXYtWxZY8Um19MsnLharmS+nWGWO89fsA="; lastModified = 1774983075; }
+    { owner = "ipetkov"; repo = "crane"; revision = "2c71e194474d13de031d729b729c968ddbe3507f"; narHash = "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw="; lastModified = 1785782307; }
+    { owner = "ipetkov"; repo = "crane"; revision = "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37"; narHash = "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0="; lastModified = 1780532242; }
+    { owner = "nix-community"; repo = "fenix"; revision = "6914a98b7864cb3ef33cb0a2581f8aed3d354e48"; narHash = "sha256-B3GatmIZGQCnJkYoes3a5OqsMNexf0PO3fpeDJDZND4="; lastModified = 1781901863; }
+    { owner = "nix-community"; repo = "home-manager"; revision = "c554d3441f725537854e877519f01cbd60680174"; narHash = "sha256-ybGtuwGKTUCefKYsplzvw4xcCqznto0c7BaiQhgILtA="; lastModified = 1786656209; }
+    { owner = "nix-community"; repo = "nix-vscode-extensions"; revision = "5ae7b47dd1d2210a1bc62cd75a7407f0794d7193"; narHash = "sha256-pf5m6/fmbeo8NMcsRcWi+vpeye9xcuuRa/H2+HHJLU8="; lastModified = 1786588309; }
+    { owner = "nix-systems"; repo = "default"; revision = "da67096a3b9bf56a91d16901293e51ba5b49a27e"; narHash = "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768="; lastModified = 1681028828; }
+    { owner = "numtide"; repo = "blueprint"; revision = "56131e8628f173d24a27f6d27c0215eff57e40dd"; narHash = "sha256-Dt9t1TGRmJFc0xVYhttNBD6QsAgHOHCArqGa0AyjrJY="; lastModified = 1776249299; }
+    { owner = "numtide"; repo = "flake-utils"; revision = "11707dc2f618dd54ca8739b309ec4fc024de578b"; narHash = "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI="; lastModified = 1731533236; }
+    { owner = "oxalica"; repo = "rust-overlay"; revision = "892c035d7c2ff75acd5da10424a47ab454e1f3dc"; narHash = "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k="; lastModified = 1786638241; }
   ];
   sourceReplayEntries = lib.genList (
     index:
@@ -222,11 +222,11 @@ let
             mkdir -p "$work/source"
             cp -a ${entry.source}/. "$work/source/"
             archive="$out/archives/${toString entry.index}.tar.gz"
-            tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            tar --sort=name --mtime='@${toString entry.lastModified}' --owner=0 --group=0 --numeric-owner \
               -C "$work" -cf - source | gzip -n > "$archive"
             archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
-            printf '%s\t%s\t%s\t%s\n' \
-              '${entry.route}' '${entry.narHash}' "$archive_hash" \
+            printf '%s\t%s\t%s\t%s\t%s\n' \
+              '${entry.route}' '${entry.narHash}' '${toString entry.lastModified}' "$archive_hash" \
               'archives/${toString entry.index}.tar.gz' >> "$out/manifest.tsv"
           ''
         ) sourceReplayEntries}
@@ -509,6 +509,7 @@ let
           pkgs.openssh
           pkgs.coreutils
           pkgs.curl
+          pkgs.gnutar
         ];
         environment = {
           # ssh-ng / nix-copy uses the deploy key + learns the target host key
@@ -541,7 +542,7 @@ let
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME" /run/lojix/source-replay
           replayed_count=0
-          while IFS="$(printf '\t')" read -r route nar_hash archive_hash archive_rel; do
+          while IFS="$(printf '\t')" read -r route nar_hash last_modified archive_hash archive_rel; do
             replayed_count=$((replayed_count + 1))
             archive="/run/lojix/source-replay/$replayed_count.tar.gz"
             for _ in $(seq 1 30); do
@@ -555,7 +556,12 @@ let
             test -s "$archive"
             actual_archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
             test "$actual_archive_hash" = "$archive_hash"
-            echo "C6 source replay verified $route narHash=$nar_hash archiveSha256=$archive_hash"
+            archive_root="/run/lojix/source-replay/archive-$replayed_count"
+            mkdir -p "$archive_root"
+            ${pkgs.gnutar}/bin/tar -xzf "$archive" -C "$archive_root"
+            archive_last_modified="$(find "$archive_root/source" -printf '%T@\n' | cut -d . -f1 | sort -u)"
+            test "$archive_last_modified" = "$last_modified"
+            echo "C6 source replay verified $route narHash=$nar_hash lastModified=$last_modified archiveSha256=$archive_hash"
           done < "${sourceReplayArchives}/manifest.tsv"
           test "$replayed_count" = "${toString (builtins.length sourceReplayEntries)}"
           if ${pkgs.curl}/bin/curl --fail --silent --show-error \
@@ -577,7 +583,8 @@ let
             --arg source "${deployFlakeSource}" \
             --arg nar_hash "sha256-TOnQ7iBNIdVHDodwhybwyCDhSPoZwdOd8s5pLxtbh0E=" \
             --arg revision "add8a445052e9517a10eff7877ed7608aca871b2" \
-            '.path == $source and .locked.narHash == $nar_hash and .revision == $revision' \
+            --argjson last_modified 1788664923 \
+            '.path == $source and .locked.narHash == $nar_hash and .revision == $revision and .locked.lastModified == $last_modified' \
             "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
