@@ -142,35 +142,209 @@ let
   # a NoSecrets fixture and unmatched routes are rejected.
   sourceReplayAddress = "192.168.1.3";
   sourceReplaySpecs = [
-    { owner = "LiGoldragon"; repo = "CriomOS"; revision = "82f6bf5958f999c97c4d81f985d4ac91bdbc2340"; narHash = "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y="; lastModified = 1788669988; }
-    { owner = "LiGoldragon"; repo = "CriomOS-home"; revision = "e71729ec6ebccce9d853227aea549712344a743c"; narHash = "sha256-Kq0V2L6CvXArCTOZdOYf7IvRd6BDxqemkYpAaTGuqSM="; lastModified = 1788669393; }
-    { owner = "LiGoldragon"; repo = "CriomOS-lib"; revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642"; narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0="; lastModified = 1786574672; }
-    { owner = "LiGoldragon"; repo = "CriomOS-pkgs"; revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d"; narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q="; lastModified = 1786664856; }
-    { owner = "LiGoldragon"; repo = "brightness-ctl"; revision = "5274f9937a8b73bd4b1d5fd9a2a0e7199ad574a3"; narHash = "sha256-isNm6Hl/rDwIUHYPtBFbqdVwO2itK2oTzq//uofKW/I="; lastModified = 1786574687; }
-    { owner = "LiGoldragon"; repo = "clavifaber"; revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab"; narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4="; lastModified = 1786576199; }
-    { owner = "LiGoldragon"; repo = "kameo"; revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01"; narHash = "sha256-yEide3elYr0mtRUStsD3AlOwdl/sKWtslj3vBp8VzVE="; lastModified = 1781859599; }
-    { owner = "LiGoldragon"; repo = "nixpkgs"; revision = "0e251e24a4f24e036a084b6b4b2d2491af4167f4"; narHash = "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU="; lastModified = 1786599213; }
-    { owner = "LiGoldragon"; repo = "pi-session-namer"; revision = "76a145939d8fc52bda07117e7c04ad66f84f2114"; narHash = "sha256-kS5nnRQA9hSOH3K7yaDPBK+RGfk/FSWpH0QtgJHgQG0="; lastModified = 1786574795; }
-    { owner = "LiGoldragon"; repo = "rust-build"; revision = "1bcdafd4590952f73fada56b0507c64192fd6327"; narHash = "sha256-Xz52U4d6S6Z4QeAqW82HSfnEkOXfd94LIBPSVN0WK/0="; lastModified = 1786574812; }
-    { owner = "Mic92"; repo = "sops-nix"; revision = "a8627b21b9107c5711c96b84f32a9a4b3d45295f"; narHash = "sha256-gkig4nPi1CWc4Z50GBsjE4ygSE7hMpl/TwID2an2Cck="; lastModified = 1786629091; }
-    { owner = "astro"; repo = "microvm.nix"; revision = "71beea0076cd46dafcee97a5a2e7d00cbba5bd2f"; narHash = "sha256-4UFJOVGpaYtHW5yasSv80MaJxTBYdk2zyf3jhKtt0wA="; lastModified = 1786300091; }
-    { owner = "dataforxyz"; repo = "agent-intercom-claude"; revision = "d62b3c85547b8b83fdfe06afb38968646fe813b8"; narHash = "sha256-9vi8GnsEVf34p4NvUE6CBRPvqxic41qaeWWbft/el7o="; lastModified = 1786398522; }
-    { owner = "dataforxyz"; repo = "agent-intercom-codex"; revision = "ea1c5b538c95b89af3fd36344396779e2eadbadb"; narHash = "sha256-QguRN26/i5Stua+K6wiYAt6pH+wX6jO684Va5VHRUmA="; lastModified = 1785440157; }
-    { owner = "dataforxyz"; repo = "agent-intercom-core"; revision = "8316cbab548f422ad11c78ed887fabeef94817c1"; narHash = "sha256-9418pR0tYDGPbf8GknIxAUyDfIN2RdfE3lBwelamLbA="; lastModified = 1785291110; }
-    { owner = "dataforxyz"; repo = "agent-intercom-opencode"; revision = "9d81100ea074f68f6466656c65536504209eb060"; narHash = "sha256-jVVIJqJ5O9IuA8K6eU8oCRfBtV68NV47vTHesSktp0s="; lastModified = 1785441928; }
-    { owner = "dataforxyz"; repo = "agent-intercom-orchestrator"; revision = "a7e16bd4386726002ab6880b35ebacdeef00fd0d"; narHash = "sha256-nmaAkcUcZ8RVZn1qJK37kEKVBs2w49s72pMXU7wi0SM="; lastModified = 1786638697; }
-    { owner = "dataforxyz"; repo = "agent-intercom-pi"; revision = "b6f8f9d08c8c5ec7141a0258ce61cda59d327a20"; narHash = "sha256-b1pif2LgGmcPJFkNKEu0ppjjdllEHLb6oa+6fLA/y/o="; lastModified = 1786488836; }
-    { owner = "earendil-works"; repo = "pi"; revision = "53fa77ccd8a279eb87e92294ef3687b03ff80112"; narHash = "sha256-lg+I4S/aAjazjhGZU567ow+rksoNiqOqjHl//TjAMes="; lastModified = 1786081693; }
-    { owner = "googleworkspace"; repo = "cli"; revision = "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd"; narHash = "sha256-YyNIHbyZrLlXYtWxZY8Um19MsnLharmS+nWGWO89fsA="; lastModified = 1774983075; }
-    { owner = "ipetkov"; repo = "crane"; revision = "2c71e194474d13de031d729b729c968ddbe3507f"; narHash = "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw="; lastModified = 1785782307; }
-    { owner = "ipetkov"; repo = "crane"; revision = "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37"; narHash = "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0="; lastModified = 1780532242; }
-    { owner = "nix-community"; repo = "fenix"; revision = "6914a98b7864cb3ef33cb0a2581f8aed3d354e48"; narHash = "sha256-B3GatmIZGQCnJkYoes3a5OqsMNexf0PO3fpeDJDZND4="; lastModified = 1781901863; }
-    { owner = "nix-community"; repo = "home-manager"; revision = "c554d3441f725537854e877519f01cbd60680174"; narHash = "sha256-ybGtuwGKTUCefKYsplzvw4xcCqznto0c7BaiQhgILtA="; lastModified = 1786656209; }
-    { owner = "nix-community"; repo = "nix-vscode-extensions"; revision = "5ae7b47dd1d2210a1bc62cd75a7407f0794d7193"; narHash = "sha256-pf5m6/fmbeo8NMcsRcWi+vpeye9xcuuRa/H2+HHJLU8="; lastModified = 1786588309; }
-    { owner = "nix-systems"; repo = "default"; revision = "da67096a3b9bf56a91d16901293e51ba5b49a27e"; narHash = "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768="; lastModified = 1681028828; }
-    { owner = "numtide"; repo = "blueprint"; revision = "56131e8628f173d24a27f6d27c0215eff57e40dd"; narHash = "sha256-Dt9t1TGRmJFc0xVYhttNBD6QsAgHOHCArqGa0AyjrJY="; lastModified = 1776249299; }
-    { owner = "numtide"; repo = "flake-utils"; revision = "11707dc2f618dd54ca8739b309ec4fc024de578b"; narHash = "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI="; lastModified = 1731533236; }
-    { owner = "oxalica"; repo = "rust-overlay"; revision = "892c035d7c2ff75acd5da10424a47ab454e1f3dc"; narHash = "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k="; lastModified = 1786638241; }
+    {
+      owner = "LiGoldragon";
+      repo = "CriomOS";
+      revision = "82f6bf5958f999c97c4d81f985d4ac91bdbc2340";
+      narHash = "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y=";
+      lastModified = 1788669988;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "CriomOS-home";
+      revision = "e71729ec6ebccce9d853227aea549712344a743c";
+      narHash = "sha256-Kq0V2L6CvXArCTOZdOYf7IvRd6BDxqemkYpAaTGuqSM=";
+      lastModified = 1788669393;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "CriomOS-lib";
+      revision = "6e3bcb0808b722c881d9c9b19d684b56b9d65642";
+      narHash = "sha256-Ye+gpUx/WQXEFufn4Mlnvby+OyFEOEm2uiyRwi39rI0=";
+      lastModified = 1786574672;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "CriomOS-pkgs";
+      revision = "c64ea0eddea6974c968431f3cebb49a1fef9e56d";
+      narHash = "sha256-EeGMjHDQguP9YynaRQUaLzbf9eoFPBffVOFBI6VZM/Q=";
+      lastModified = 1786664856;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "brightness-ctl";
+      revision = "5274f9937a8b73bd4b1d5fd9a2a0e7199ad574a3";
+      narHash = "sha256-isNm6Hl/rDwIUHYPtBFbqdVwO2itK2oTzq//uofKW/I=";
+      lastModified = 1786574687;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "clavifaber";
+      revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab";
+      narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4=";
+      lastModified = 1786576199;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "kameo";
+      revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01";
+      narHash = "sha256-yEide3elYr0mtRUStsD3AlOwdl/sKWtslj3vBp8VzVE=";
+      lastModified = 1781859599;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "nixpkgs";
+      revision = "0e251e24a4f24e036a084b6b4b2d2491af4167f4";
+      narHash = "sha256-yNJd40f11EzXBjSByCB7IPpeFFAdeoSKKM67dGkfFoU=";
+      lastModified = 1786599213;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "pi-session-namer";
+      revision = "76a145939d8fc52bda07117e7c04ad66f84f2114";
+      narHash = "sha256-kS5nnRQA9hSOH3K7yaDPBK+RGfk/FSWpH0QtgJHgQG0=";
+      lastModified = 1786574795;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "rust-build";
+      revision = "1bcdafd4590952f73fada56b0507c64192fd6327";
+      narHash = "sha256-Xz52U4d6S6Z4QeAqW82HSfnEkOXfd94LIBPSVN0WK/0=";
+      lastModified = 1786574812;
+    }
+    {
+      owner = "Mic92";
+      repo = "sops-nix";
+      revision = "a8627b21b9107c5711c96b84f32a9a4b3d45295f";
+      narHash = "sha256-gkig4nPi1CWc4Z50GBsjE4ygSE7hMpl/TwID2an2Cck=";
+      lastModified = 1786629091;
+    }
+    {
+      owner = "astro";
+      repo = "microvm.nix";
+      revision = "71beea0076cd46dafcee97a5a2e7d00cbba5bd2f";
+      narHash = "sha256-4UFJOVGpaYtHW5yasSv80MaJxTBYdk2zyf3jhKtt0wA=";
+      lastModified = 1786300091;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-claude";
+      revision = "d62b3c85547b8b83fdfe06afb38968646fe813b8";
+      narHash = "sha256-9vi8GnsEVf34p4NvUE6CBRPvqxic41qaeWWbft/el7o=";
+      lastModified = 1786398522;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-codex";
+      revision = "ea1c5b538c95b89af3fd36344396779e2eadbadb";
+      narHash = "sha256-QguRN26/i5Stua+K6wiYAt6pH+wX6jO684Va5VHRUmA=";
+      lastModified = 1785440157;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-core";
+      revision = "8316cbab548f422ad11c78ed887fabeef94817c1";
+      narHash = "sha256-9418pR0tYDGPbf8GknIxAUyDfIN2RdfE3lBwelamLbA=";
+      lastModified = 1785291110;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-opencode";
+      revision = "9d81100ea074f68f6466656c65536504209eb060";
+      narHash = "sha256-jVVIJqJ5O9IuA8K6eU8oCRfBtV68NV47vTHesSktp0s=";
+      lastModified = 1785441928;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-orchestrator";
+      revision = "a7e16bd4386726002ab6880b35ebacdeef00fd0d";
+      narHash = "sha256-nmaAkcUcZ8RVZn1qJK37kEKVBs2w49s72pMXU7wi0SM=";
+      lastModified = 1786638697;
+    }
+    {
+      owner = "dataforxyz";
+      repo = "agent-intercom-pi";
+      revision = "b6f8f9d08c8c5ec7141a0258ce61cda59d327a20";
+      narHash = "sha256-b1pif2LgGmcPJFkNKEu0ppjjdllEHLb6oa+6fLA/y/o=";
+      lastModified = 1786488836;
+    }
+    {
+      owner = "earendil-works";
+      repo = "pi";
+      revision = "53fa77ccd8a279eb87e92294ef3687b03ff80112";
+      narHash = "sha256-lg+I4S/aAjazjhGZU567ow+rksoNiqOqjHl//TjAMes=";
+      lastModified = 1786081693;
+    }
+    {
+      owner = "googleworkspace";
+      repo = "cli";
+      revision = "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd";
+      narHash = "sha256-YyNIHbyZrLlXYtWxZY8Um19MsnLharmS+nWGWO89fsA=";
+      lastModified = 1774983075;
+    }
+    {
+      owner = "ipetkov";
+      repo = "crane";
+      revision = "2c71e194474d13de031d729b729c968ddbe3507f";
+      narHash = "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw=";
+      lastModified = 1785782307;
+    }
+    {
+      owner = "ipetkov";
+      repo = "crane";
+      revision = "59a82a1222dd3b2080b5cc52a1a2e8d5f1b77f37";
+      narHash = "sha256-D+BsdpxmtUwtqGoY0IXPhHgTlmqgcZKCEo1oMyn7ep0=";
+      lastModified = 1780532242;
+    }
+    {
+      owner = "nix-community";
+      repo = "fenix";
+      revision = "6914a98b7864cb3ef33cb0a2581f8aed3d354e48";
+      narHash = "sha256-B3GatmIZGQCnJkYoes3a5OqsMNexf0PO3fpeDJDZND4=";
+      lastModified = 1781901863;
+    }
+    {
+      owner = "nix-community";
+      repo = "home-manager";
+      revision = "c554d3441f725537854e877519f01cbd60680174";
+      narHash = "sha256-ybGtuwGKTUCefKYsplzvw4xcCqznto0c7BaiQhgILtA=";
+      lastModified = 1786656209;
+    }
+    {
+      owner = "nix-community";
+      repo = "nix-vscode-extensions";
+      revision = "5ae7b47dd1d2210a1bc62cd75a7407f0794d7193";
+      narHash = "sha256-pf5m6/fmbeo8NMcsRcWi+vpeye9xcuuRa/H2+HHJLU8=";
+      lastModified = 1786588309;
+    }
+    {
+      owner = "nix-systems";
+      repo = "default";
+      revision = "da67096a3b9bf56a91d16901293e51ba5b49a27e";
+      narHash = "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=";
+      lastModified = 1681028828;
+    }
+    {
+      owner = "numtide";
+      repo = "blueprint";
+      revision = "56131e8628f173d24a27f6d27c0215eff57e40dd";
+      narHash = "sha256-Dt9t1TGRmJFc0xVYhttNBD6QsAgHOHCArqGa0AyjrJY=";
+      lastModified = 1776249299;
+    }
+    {
+      owner = "numtide";
+      repo = "flake-utils";
+      revision = "11707dc2f618dd54ca8739b309ec4fc024de578b";
+      narHash = "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=";
+      lastModified = 1731533236;
+    }
+    {
+      owner = "oxalica";
+      repo = "rust-overlay";
+      revision = "892c035d7c2ff75acd5da10424a47ab454e1f3dc";
+      narHash = "sha256-KJhq0HYg2gIZjpsj47z1kWrjoUUAqSqdD2mMWAsOg4k=";
+      lastModified = 1786638241;
+    }
   ];
   sourceReplayEntries = lib.genList (
     index:
@@ -181,57 +355,95 @@ let
     // {
       inherit index;
       route = "/${spec.owner}/${spec.repo}/archive/${spec.revision}.tar.gz";
-      source = (builtins.fetchTree {
-        type = "github";
-        owner = spec.owner;
-        repo = spec.repo;
-        rev = spec.revision;
-        narHash = spec.narHash;
-      }).outPath;
+      source =
+        (builtins.fetchTree {
+          type = "github";
+          owner = spec.owner;
+          repo = spec.repo;
+          rev = spec.revision;
+          narHash = spec.narHash;
+        }).outPath;
     }
   ) (builtins.length sourceReplaySpecs);
   kameoReplayEntry = lib.findFirst (
     entry: entry.owner == "LiGoldragon" && entry.repo == "kameo"
   ) (throw "C6 needs the locked Kameo source replay entry") sourceReplayEntries;
-  # Clavifaber's Cargo.lock names this exact Git commit. `fetchTree` proves
-  # its source content, while Crane's `builtins.fetchGit` needs the complete
-  # reachable Git graph, not a shallow source checkout. This committed bundle
-  # contains precisely f491 and its 417 ancestors under one `main` ref. To
-  # regenerate, import f491 as `refs/heads/main` into a temporary bare repo,
-  # create a bundle from that one ref, then update this hash/count/tree only
-  # after repeating the locked-NAR and smart-HTTP probes below.
-  kameoGitBundle = ./../fixtures/kameo-f491.bundle;
-  kameoGitBundleSha256 = "328b6919e2e62459e08feea4f93c5839e579ae2e405e4058f1edff970b3a0d79";
-  sourceReplayGit = pkgs.runCommand "c6-kameo-f491-git-replay"
+  # Crane uses `builtins.fetchGit` for every Cargo Git source. Each committed
+  # bundle is a complete, non-shallow history with only the frozen main ref:
+  # enough for the locked revision, but never a general GitHub mirror.
+  # Regenerate one only by cloning its published full history, moving
+  # `refs/heads/main` to the listed immutable revision, setting HEAD to that
+  # ref, verifying this commit/tree/count and no `.gitmodules`, then creating
+  # and verifying the bundle. Re-check the source NAR against the consuming
+  # lock before replacing any value here.
+  cargoGitReplaySpecs = [
     {
-      nativeBuildInputs = [
-        pkgs.coreutils
-        pkgs.gitMinimal
-      ];
+      repositoryPath = "LiGoldragon/kameo.git";
+      bundle = ./../fixtures/kameo-f491.bundle;
+      bundleSha256 = "328b6919e2e62459e08feea4f93c5839e579ae2e405e4058f1edff970b3a0d79";
+      revision = "f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01";
+      tree = "4cacb33f3d5731e0345958802a746e1fde82c943";
+      ancestorCount = 417;
+      narHash = kameoReplayEntry.narHash;
+      allRefs = false;
     }
-    ''
-      repository="$out/LiGoldragon/kameo.git"
-      test "$(sha256sum ${kameoGitBundle} | cut -d ' ' -f1)" = ${kameoGitBundleSha256}
-      mkdir -p "$out/LiGoldragon"
-      export GIT_CONFIG_GLOBAL=/dev/null
-      git clone --bare ${kameoGitBundle} "$repository"
-      git -C "$repository" symbolic-ref HEAD refs/heads/main
-      test "$(git -C "$repository" symbolic-ref HEAD)" = refs/heads/main
-      actual_commit="$(git -C "$repository" rev-parse refs/heads/main)"
-      test "$actual_commit" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
-      actual_tree="$(git -C "$repository" rev-parse "$actual_commit^{tree}")"
-      test "$actual_tree" = 4cacb33f3d5731e0345958802a746e1fde82c943
-      test "$(git -C "$repository" rev-list --count "$actual_commit")" = 417
-      test "$(git -C "$repository" show-ref | wc -l)" = 1
-      test ! -e "$repository/shallow"
-      cat > "$out/manifest" <<EOF
-      bundleSha256=${kameoGitBundleSha256}
-      narHash=${kameoReplayEntry.narHash}
-      tree=$actual_tree
-      revision=$actual_commit
-      ref=refs/heads/main
-      EOF
-    '';
+    {
+      repositoryPath = "LiGoldragon/datom-codec";
+      bundle = ./../fixtures/datom-codec-41a3.bundle;
+      bundleSha256 = "f44af3b9f7675fe7d732e02d3c4c2e6bfe5badf2ab995d74ff6f2e79d7ccdfdf";
+      revision = "41a3c073d5c5cdcb3ebb1a5c842e8c068145fdb2";
+      tree = "309a6190f6154622cf22be236e27734a97e14581";
+      ancestorCount = 55;
+      narHash = "sha256-/mShiTE68yXKtwVlym4fT8IAPEw2+UJEHZDLBMOyTw8=";
+      allRefs = true;
+    }
+    {
+      repositoryPath = "LiGoldragon/protos";
+      bundle = ./../fixtures/protos-2d999.bundle;
+      bundleSha256 = "5abd24b59ebcc1a3f5e70c06bb4ea65eedc6c064d8628aceb86d5b476616d782";
+      revision = "2d999f1733347b7e64e24b2f75ba889ad7182bc0";
+      tree = "2673aac70530afb69984ea05762a10f6ed0861c2";
+      ancestorCount = 120;
+      narHash = "sha256-+hhP/FVgUgvoZLzcMKP2R9TFrVr0WOUDDTDdv4uL5qU=";
+      allRefs = true;
+    }
+  ];
+  sourceReplayGit =
+    pkgs.runCommand "c6-cargo-git-replay"
+      {
+        nativeBuildInputs = [
+          pkgs.coreutils
+          pkgs.gitMinimal
+        ];
+      }
+      ''
+        export GIT_CONFIG_GLOBAL=/dev/null
+        mkdir -p "$out"
+        : > "$out/manifest.tsv"
+          ${lib.concatMapStringsSep "\n" (spec: ''
+            repository="$out/${spec.repositoryPath}"
+            test "$(sha256sum ${spec.bundle} | cut -d ' ' -f1)" = ${spec.bundleSha256}
+            mkdir -p "$(dirname "$repository")"
+            git clone --bare ${spec.bundle} "$repository"
+            git -C "$repository" symbolic-ref HEAD refs/heads/main
+            test "$(git -C "$repository" symbolic-ref HEAD)" = refs/heads/main
+            actual_commit="$(git -C "$repository" rev-parse refs/heads/main)"
+            test "$actual_commit" = ${spec.revision}
+            actual_tree="$(git -C "$repository" rev-parse "$actual_commit^{tree}")"
+            test "$actual_tree" = ${spec.tree}
+            test "$(git -C "$repository" rev-list --count "$actual_commit")" = ${toString spec.ancestorCount}
+            test "$(git -C "$repository" show-ref | wc -l)" = 1
+            test ! -e "$repository/shallow"
+            if git -C "$repository" cat-file -e "$actual_commit:.gitmodules" 2>/dev/null; then
+              echo "C6 Cargo Git replay unexpectedly contains submodules: ${spec.repositoryPath}" >&2
+              exit 1
+            fi
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              '${spec.repositoryPath}' '${spec.bundleSha256}' '${spec.narHash}' \
+              "$actual_tree" "$actual_commit" '${toString spec.ancestorCount}' \
+              '${lib.boolToString spec.allRefs}' refs/heads/main >> "$out/manifest.tsv"
+          '') cargoGitReplaySpecs}
+      '';
   sourceReplayTls =
     pkgs.runCommand "c6-source-replay-tls"
       {
@@ -258,20 +470,18 @@ let
       ''
         mkdir -p "$out/archives"
         : > "$out/manifest.tsv"
-        ${lib.concatMapStringsSep "\n" (
-          entry: ''
-            work="$TMPDIR/source-${toString entry.index}"
-            mkdir -p "$work/source"
-            cp -a ${entry.source}/. "$work/source/"
-            archive="$out/archives/${toString entry.index}.tar.gz"
-            tar --sort=name --mtime='@${toString entry.lastModified}' --owner=0 --group=0 --numeric-owner \
-              -C "$work" -cf - source | gzip -n > "$archive"
-            archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
-            printf '%s\t%s\t%s\t%s\t%s\n' \
-              '${entry.route}' '${entry.narHash}' '${toString entry.lastModified}' "$archive_hash" \
-              'archives/${toString entry.index}.tar.gz' >> "$out/manifest.tsv"
-          ''
-        ) sourceReplayEntries}
+        ${lib.concatMapStringsSep "\n" (entry: ''
+          work="$TMPDIR/source-${toString entry.index}"
+          mkdir -p "$work/source"
+          cp -a ${entry.source}/. "$work/source/"
+          archive="$out/archives/${toString entry.index}.tar.gz"
+          tar --sort=name --mtime='@${toString entry.lastModified}' --owner=0 --group=0 --numeric-owner \
+            -C "$work" -cf - source | gzip -n > "$archive"
+          archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
+          printf '%s\t%s\t%s\t%s\t%s\n' \
+            '${entry.route}' '${entry.narHash}' '${toString entry.lastModified}' "$archive_hash" \
+            'archives/${toString entry.index}.tar.gz' >> "$out/manifest.tsv"
+        '') sourceReplayEntries}
       '';
   sourceReplayServer = pkgs.writeText "c6-source-replay.py" ''
     import http.server
@@ -287,20 +497,34 @@ let
       ) sourceReplayEntries}
     }
     GIT_PROJECT_ROOT = "/etc/c6-source-replay/git"
-    KAMEO_PREFIX = "/LiGoldragon/kameo.git"
+    GIT_REPOSITORIES = {
+      ${lib.concatMapStringsSep "\n" (
+        spec: "${builtins.toJSON "/${spec.repositoryPath}"}: True,"
+      ) cargoGitReplaySpecs}
+    }
 
     def git_response(handler):
         parsed = urllib.parse.urlsplit(handler.path)
+        repository = next(
+            (
+                prefix
+                for prefix in GIT_REPOSITORIES
+                if parsed.path == prefix + "/info/refs"
+                or parsed.path == prefix + "/git-upload-pack"
+            ),
+            None,
+        )
         allowed = (
-            (handler.command == "GET" and
-             parsed.path == KAMEO_PREFIX + "/info/refs" and
-             parsed.query == "service=git-upload-pack") or
-            (handler.command == "POST" and
-             parsed.path == KAMEO_PREFIX + "/git-upload-pack" and
-             parsed.query == "")
+            repository is not None and
+            ((handler.command == "GET" and
+              parsed.path == repository + "/info/refs" and
+              parsed.query == "service=git-upload-pack") or
+             (handler.command == "POST" and
+              parsed.path == repository + "/git-upload-pack" and
+              parsed.query == ""))
         )
         if not allowed:
-            handler.send_error(404, "C6 source replay permits only the locked Kameo upload-pack endpoints")
+            handler.send_error(404, "C6 source replay permits only the locked Cargo Git upload-pack endpoints")
             return
         content_length = int(handler.headers.get("Content-Length", "0"))
         body = handler.rfile.read(content_length) if content_length else b""
@@ -326,7 +550,7 @@ let
             env=environment,
         )
         if result.returncode != 0 or b"\r\n\r\n" not in result.stdout:
-            handler.send_error(500, "C6 Kameo upload-pack backend failed")
+            handler.send_error(500, "C6 Cargo Git upload-pack backend failed")
             return
         raw_headers, response_body = result.stdout.split(b"\r\n\r\n", 1)
         status = 200
@@ -352,7 +576,12 @@ let
         protocol_version = "HTTP/1.1"
 
         def do_GET(self):
-            if self.path.startswith(KAMEO_PREFIX + "/"):
+            parsed = urllib.parse.urlsplit(self.path)
+            if any(
+                parsed.path == prefix + "/info/refs"
+                or parsed.path == prefix + "/git-upload-pack"
+                for prefix in GIT_REPOSITORIES
+            ):
                 git_response(self)
                 return
             archive = ARCHIVES.get(self.path)
@@ -446,7 +675,10 @@ let
         description = "C6 exact immutable GitHub archive replay";
         wantedBy = [ "multi-user.target" ];
         after = [ "network.target" ];
-        path = [ pkgs.python3 pkgs.gitMinimal ];
+        path = [
+          pkgs.python3
+          pkgs.gitMinimal
+        ];
         serviceConfig = {
           Type = "simple";
           Restart = "no";
@@ -579,6 +811,11 @@ let
           "flakes"
         ];
       };
+      # Crane's `builtins.fetchGit` runs through the Nix daemon, whose PATH is
+      # independent of the Lojix service. Keep this test deployment aligned
+      # with the normal CriomOS Nix-daemon dependency and prove it below before
+      # Lojix starts its immutable evaluation.
+      systemd.services.nix-daemon.path = lib.mkAfter [ pkgs.gitMinimal ];
 
       # The deploy private key on disk for the daemon's ssh / nix-copy.
       environment.etc."lojix-c6/deploy_key" = {
@@ -697,17 +934,45 @@ let
             echo "C6 source replay verified $route narHash=$nar_hash lastModified=$last_modified archiveSha256=$archive_hash"
           done < "${sourceReplayArchives}/manifest.tsv"
           test "$replayed_count" = "${toString (builtins.length sourceReplayEntries)}"
-          # Cargo's locked Kameo dependency is a Git source.  Prove the exact
-          # finite smart-HTTP route can fetch the complete locked graph, and that its
-          # source tree is the lock-verified NAR before the daemon starts.
-          git clone https://github.com/LiGoldragon/kameo.git /run/lojix/kameo-probe
-          test "$(git -C /run/lojix/kameo-probe rev-parse HEAD)" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
-          test "$(git -C /run/lojix/kameo-probe symbolic-ref --short HEAD)" = main
-          test "$(git -C /run/lojix/kameo-probe rev-list --count HEAD)" = 417
-          mkdir -p /run/lojix/kameo-tree
-          git -C /run/lojix/kameo-probe archive f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01 | \
-            ${pkgs.gnutar}/bin/tar -C /run/lojix/kameo-tree -xf -
-          test "$(nix hash path --type sha256 --sri /run/lojix/kameo-tree)" = "${kameoReplayEntry.narHash}"
+          # Crane fetches its Cargo Git dependencies with `builtins.fetchGit`.
+          # Test the three exact HTTPS smart-Git routes through the deployer's
+          # own Nix daemon before Lojix starts. Kameo is branch-scoped; the
+          # two current Datom sources intentionally use Crane's `allRefs =
+          # true` mode. The replay nevertheless exposes only the one frozen
+          # main ref containing each locked revision.
+          nix_daemon_environment="$(systemctl show --property=Environment --value nix-daemon.service)"
+          case "$nix_daemon_environment" in
+            *"${pkgs.gitMinimal}/bin"*) ;;
+            *)
+              echo "C6 nix-daemon PATH lacks gitMinimal: $nix_daemon_environment" >&2
+              exit 1
+              ;;
+          esac
+          cargo_git_count=0
+          while IFS="$(printf '\t')" read -r repository bundle_hash nar_hash tree revision ancestor_count all_refs ref; do
+            cargo_git_count=$((cargo_git_count + 1))
+            probe_name="$(basename "$repository" .git)"
+            probe_directory="/run/lojix/$probe_name-probe"
+            probe_tree="/run/lojix/$probe_name-tree"
+            git clone "https://github.com/$repository" "$probe_directory"
+            test "$(git -C "$probe_directory" rev-parse HEAD)" = "$revision"
+            test "$(git -C "$probe_directory" symbolic-ref --short HEAD)" = main
+            test "$(git -C "$probe_directory" rev-parse "$revision^{tree}")" = "$tree"
+            test "$(git -C "$probe_directory" rev-list --count HEAD)" = "$ancestor_count"
+            mkdir -p "$probe_tree"
+            git -C "$probe_directory" archive "$revision" | \
+              ${pkgs.gnutar}/bin/tar -C "$probe_tree" -xf -
+            test "$(nix hash path --type sha256 --sri "$probe_tree")" = "$nar_hash"
+            if test "$all_refs" = true; then
+              fetch_expression="builtins.fetchGit { url = \"https://github.com/$repository\"; rev = \"$revision\"; allRefs = true; submodules = true; }"
+            else
+              fetch_expression="builtins.fetchGit { url = \"https://github.com/$repository\"; rev = \"$revision\"; ref = \"$ref\"; allRefs = false; submodules = true; }"
+            fi
+            fetched_source="$(nix eval --raw --impure --expr "$fetch_expression")"
+            test "$(nix hash path --type sha256 --sri "$fetched_source")" = "$nar_hash"
+            echo "C6 Cargo Git replay verified $repository revision=$revision tree=$tree narHash=$nar_hash allRefs=$all_refs"
+          done < "${sourceReplayGit}/manifest.tsv"
+          test "$cargo_git_count" = "${toString (builtins.length cargoGitReplaySpecs)}"
           if ${pkgs.curl}/bin/curl --fail --silent --show-error \
             --cacert "${sourceReplayTls}/cert.pem" \
             https://github.com/c6-source-replay-unmatched \
