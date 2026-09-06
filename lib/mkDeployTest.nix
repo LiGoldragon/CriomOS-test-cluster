@@ -136,20 +136,20 @@ let
   # in a third test VM. The submitted Lojix reference remains github:, and the
   # deployer verifies Nix's resolved source path and narHash before it starts.
   sourceReplayAddress = "192.168.1.3";
-  sourceReplayRoute = "/repos/LiGoldragon/CriomOS-test-cluster/tarball/1eed8642f9ec6b91bea582e1beacacd5a66157fe";
+  sourceReplayRoute = "/LiGoldragon/CriomOS-test-cluster/archive/1eed8642f9ec6b91bea582e1beacacd5a66157fe.tar.gz";
   sourceReplayTls =
     pkgs.runCommand "c6-source-replay-tls"
       {
         nativeBuildInputs = [ pkgs.openssl ];
       }
       ''
-        mkdir -p "$out"
-        openssl req -x509 -newkey rsa:2048 -nodes \
-          -keyout "$out/key.pem" \
-          -out "$out/cert.pem" \
-          -days 3650 \
-          -subj /CN=api.github.com \
-          -addext subjectAltName=DNS:api.github.com
+          mkdir -p "$out"
+          openssl req -x509 -newkey rsa:2048 -nodes \
+            -keyout "$out/key.pem" \
+            -out "$out/cert.pem" \
+            -days 3650 \
+        -subj /CN=github.com \
+        -addext subjectAltName=DNS:github.com
       '';
   sourceReplayArchive =
     pkgs.runCommand "c6-source-replay-archive"
@@ -370,7 +370,7 @@ let
       ];
 
       # Nix remains offline from the outside world and trusts unsigned local
-      # closures. The fixture maps only api.github.com to the source-replay VM
+      # closures. The fixture maps only github.com to the source-replay VM
       # and pins that synthetic endpoint with its test CA. Lojix still receives
       # the immutable production github: URI; neither registry nor path
       # substitution is involved.
@@ -420,7 +420,7 @@ let
           criomeDomainName
           guestName
         ];
-        "${sourceReplayAddress}" = [ "api.github.com" ];
+        "${sourceReplayAddress}" = [ "github.com" ];
       };
 
       # The lojix daemon as a service, configured the REAL way:
