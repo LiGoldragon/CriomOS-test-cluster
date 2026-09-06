@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:LiGoldragon/nixpkgs?ref=main";
 
-    criomos.url = "github:LiGoldragon/CriomOS/add8a445052e9517a10eff7877ed7608aca871b2";
+    criomos.url = "github:LiGoldragon/CriomOS/d15c1ebbbf2ff1fe6696441d91075fd228d13d43";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
 
