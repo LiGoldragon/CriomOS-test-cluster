@@ -103,7 +103,7 @@ let
   # The normal CriomOS root owns all four materialized input names: `horizon`,
   # `system`, `deployment`, and `secrets`. The smoke driver remains a separate
   # test-cluster checkout; it cannot stand in for the RequireImmutable source.
-  deployFlakeReference = "github:LiGoldragon/CriomOS/add8a445052e9517a10eff7877ed7608aca871b2";
+  deployFlakeReference = "github:LiGoldragon/CriomOS?rev=add8a445052e9517a10eff7877ed7608aca871b2";
   deployFlakeSource = inputs.criomos.outPath;
   # This closure came from a real Lojix BuildOnly materialization of the exact
   # definition below, `(fieldlab, mercury)`, BaseHost, NoSecrets, and the same
