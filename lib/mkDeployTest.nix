@@ -634,6 +634,54 @@ let
     server.serve_forever()
   '';
 
+  # C6-only observability for the daemon's own Nix children.  The public Lojix
+  # failure record deliberately carries only a typed stage/reason, so this shim
+  # preserves the real command's argv, inherited context, output, and status in
+  # the test VM when a pipeline effect fails.  It executes the immutable Nix
+  # binary directly and forwards its streams unchanged; it is not a fallback or
+  # an alternate evaluator.
+  lojixNixCommandCapture = pkgs.writeShellScriptBin "nix" ''
+    set -u
+    umask 077
+    log=/run/lojix/nix-command-capture.log
+    capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/nix-command.XXXXXX)"
+    trap '${pkgs.coreutils}/bin/rm -rf "$capture_directory"' EXIT
+
+    {
+      printf '%s\n' '=== C6 lojix daemon Nix command ==='
+      printf 'uid='; ${pkgs.coreutils}/bin/id -u
+      printf 'working-directory='; ${pkgs.coreutils}/bin/pwd
+      printf 'PATH=%s\n' "$PATH"
+      printf 'argv='
+      printf '%q ' "$@"
+      printf '\n'
+    } >> "$log"
+
+    set +e
+    ${pkgs.nix}/bin/nix "$@" > "$capture_directory/stdout" 2> "$capture_directory/stderr"
+    status=$?
+    set -e
+
+    {
+      printf 'exit-status=%s\n' "$status"
+      printf '%s\n' '--- stdout ---'
+      ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
+      printf '%s\n' '--- stderr ---'
+      ${pkgs.coreutils}/bin/cat "$capture_directory/stderr"
+      printf '%s\n' '=== end C6 lojix daemon Nix command ==='
+    } >> "$log"
+
+    ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
+    ${pkgs.coreutils}/bin/cat "$capture_directory/stderr" >&2
+    # A shell observes a signalled child as 128 + signal.  Re-raise that signal
+    # after recording and forwarding the streams, rather than converting it to
+    # an ordinary successful wrapper exit.
+    if test "$status" -gt 128 && test "$status" -le 192; then
+      kill -"$((status - 128))" "$$"
+    fi
+    exit "$status"
+  '';
+
   # A throwaway deploy keypair, generated reproducibly at build time. Private
   # half lives only on the deployer; public half authorises root on the target.
   # A test-substrate credential (like require-sigs=false), never a real key.
@@ -1022,6 +1070,10 @@ let
             "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
+          # Place the transparent capture shim only in the daemon's inherited
+          # environment.  Pre-daemon replay probes intentionally remain outside
+          # this diagnostic boundary.
+          export PATH="${lojixNixCommandCapture}/bin:$PATH"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -1185,6 +1237,9 @@ assertModel (
               daemon_journal = deployer.execute(
                   "journalctl -u lojix-daemon.service --no-pager"
               )[1]
+              daemon_nix_capture = deployer.execute(
+                  "cat /run/lojix/nix-command-capture.log 2>/dev/null || true"
+              )[1]
               # `EffectStage::Eval` maps every subprocess failure to the public
               # FlakeReferenceMalformed terminal reason. Reconstruct the exact
               # daemon-side eval after materialization so the test reports the
@@ -1219,6 +1274,8 @@ assertModel (
               print(diagnostic_output)
               print("=== lojix daemon deployment journal ===")
               print(daemon_journal)
+              print("=== lojix daemon Nix command capture ===")
+              print(daemon_nix_capture)
               raise AssertionError(
                   "lojix deployment reached a durable Failed or Rejected terminal state"
               )
