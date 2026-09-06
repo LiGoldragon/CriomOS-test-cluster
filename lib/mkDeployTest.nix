@@ -876,13 +876,15 @@ let
       # after admission; this is test-runner capacity only, not a Lojix option.
       virtualisation.memorySize = 4096;
 
-      # Register the independently materialized Mercury output and derivation in
-      # the deployer VM's Nix DB.  `system.extraDependencies` alone puts a path
-      # in the NixOS system closure but does not make it an available VM store
-      # path for the daemon's subsequent `nix build <drv>^*` command.
+      # Register the independently materialized Mercury runtime closure in the
+      # deployer VM's Nix DB.  `system.extraDependencies` alone puts a path in
+      # the NixOS system closure but does not make it an available VM store path
+      # for the daemon's subsequent `nix build <drv>^*` command.  The .drv is
+      # deliberately not a closureInfo root: that would include build-time
+      # inputs instead of this realized runtime closure.  Lojix's real Eval
+      # creates the .drv before its authoritative Build.
       virtualisation.additionalPaths = [
         deployedToplevel
-        deployedToplevelDrv
       ];
 
       # The exact immutable root flake source and each locked input remain in
@@ -1103,12 +1105,11 @@ let
             '.path == $source and .locked.narHash == $nar_hash and .revision == $revision and .locked.lastModified == $last_modified' \
             "$metadata" >/dev/null
           # This is a fixture precondition, not the deployment: prove the
-          # separately materialized output and its derivation are registered
-          # with every requisite before Lojix starts.  Only after those checks
-          # make rebuilding impossible does the exact command the daemon will
-          # use have to return the already-realized output.
+          # separately materialized output is registered with every runtime
+          # requisite before Lojix starts.  Its recorded deriver must be the
+          # expected .drv; Lojix's real Eval then creates that derivation before
+          # its authoritative Build, which the fixture observes separately.
           nix-store --verify-path "${deployedToplevel}"
-          nix-store --verify-path "${deployedToplevelDrv}"
           requisites=/run/lojix/c6-mercury-requisites
           nix-store --query --requisites "${deployedToplevel}" > "$requisites"
           test -s "$requisites"
@@ -1116,8 +1117,6 @@ let
             nix-store --verify-path "$requisite"
           done < "$requisites"
           test "$(nix-store --query --deriver "${deployedToplevel}")" = "${deployedToplevelDrv}"
-          preseeded_output="$(nix build --no-link --print-out-paths "${deployedToplevelDrv}^*")"
-          test "$preseeded_output" = "${deployedToplevel}"
           echo "C6 deployer store preseed verified output=${deployedToplevel} derivation=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
