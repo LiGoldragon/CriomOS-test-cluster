@@ -190,6 +190,46 @@ let
       }).outPath;
     }
   ) (builtins.length sourceReplaySpecs);
+  kameoReplayEntry = lib.findFirst (
+    entry: entry.owner == "LiGoldragon" && entry.repo == "kameo"
+  ) (throw "C6 needs the locked Kameo source replay entry") sourceReplayEntries;
+  # Clavifaber's Cargo.lock names this exact Git commit. `fetchTree` proves
+  # its source content, while Crane's `builtins.fetchGit` needs the complete
+  # reachable Git graph, not a shallow source checkout. This committed bundle
+  # contains precisely f491 and its 417 ancestors under one `main` ref. To
+  # regenerate, import f491 as `refs/heads/main` into a temporary bare repo,
+  # create a bundle from that one ref, then update this hash/count/tree only
+  # after repeating the locked-NAR and smart-HTTP probes below.
+  kameoGitBundle = ./../fixtures/kameo-f491.bundle;
+  kameoGitBundleSha256 = "328b6919e2e62459e08feea4f93c5839e579ae2e405e4058f1edff970b3a0d79";
+  sourceReplayGit = pkgs.runCommand "c6-kameo-f491-git-replay"
+    {
+      nativeBuildInputs = [
+        pkgs.coreutils
+        pkgs.gitMinimal
+      ];
+    }
+    ''
+      repository="$out/LiGoldragon/kameo.git"
+      test "$(sha256sum ${kameoGitBundle} | cut -d ' ' -f1)" = ${kameoGitBundleSha256}
+      mkdir -p "$out/LiGoldragon"
+      export GIT_CONFIG_GLOBAL=/dev/null
+      git clone --bare ${kameoGitBundle} "$repository"
+      actual_commit="$(git -C "$repository" rev-parse refs/heads/main)"
+      test "$actual_commit" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
+      actual_tree="$(git -C "$repository" rev-parse "$actual_commit^{tree}")"
+      test "$actual_tree" = 4cacb33f3d5731e0345958802a746e1fde82c943
+      test "$(git -C "$repository" rev-list --count "$actual_commit")" = 417
+      test "$(git -C "$repository" show-ref | wc -l)" = 1
+      test ! -e "$repository/shallow"
+      cat > "$out/manifest" <<EOF
+      bundleSha256=${kameoGitBundleSha256}
+      narHash=${kameoReplayEntry.narHash}
+      tree=$actual_tree
+      revision=$actual_commit
+      ref=refs/heads/main
+      EOF
+    '';
   sourceReplayTls =
     pkgs.runCommand "c6-source-replay-tls"
       {
@@ -235,6 +275,8 @@ let
     import http.server
     import os
     import ssl
+    import subprocess
+    import urllib.parse
 
     ARCHIVES = {
       ${lib.concatMapStringsSep "\n" (
@@ -242,9 +284,67 @@ let
         "${builtins.toJSON entry.route}: ${builtins.toJSON "${sourceReplayArchives}/archives/${toString entry.index}.tar.gz"},"
       ) sourceReplayEntries}
     }
+    GIT_PROJECT_ROOT = "/etc/c6-source-replay/git"
+    KAMEO_PREFIX = "/LiGoldragon/kameo.git"
+
+    def git_response(handler):
+        parsed = urllib.parse.urlsplit(handler.path)
+        allowed = (
+            (handler.command == "GET" and
+             parsed.path == KAMEO_PREFIX + "/info/refs" and
+             parsed.query == "service=git-upload-pack") or
+            (handler.command == "POST" and
+             parsed.path == KAMEO_PREFIX + "/git-upload-pack" and
+             parsed.query == "")
+        )
+        if not allowed:
+            handler.send_error(404, "C6 source replay permits only the locked Kameo upload-pack endpoints")
+            return
+        content_length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(content_length) if content_length else b""
+        environment = os.environ.copy()
+        environment.update({
+            "GIT_PROJECT_ROOT": GIT_PROJECT_ROOT,
+            "GIT_HTTP_EXPORT_ALL": "1",
+            "REQUEST_METHOD": handler.command,
+            "PATH_INFO": parsed.path,
+            "QUERY_STRING": parsed.query,
+            "CONTENT_TYPE": handler.headers.get("Content-Type", ""),
+            "CONTENT_LENGTH": str(content_length),
+            "REMOTE_ADDR": handler.client_address[0],
+            "SERVER_PROTOCOL": handler.protocol_version,
+        })
+        result = subprocess.run(
+            ["${pkgs.gitMinimal}/bin/git", "http-backend"],
+            input=body,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            env=environment,
+        )
+        if result.returncode != 0 or b"\r\n\r\n" not in result.stdout:
+            handler.send_error(500, "C6 Kameo upload-pack backend failed")
+            return
+        raw_headers, response_body = result.stdout.split(b"\r\n\r\n", 1)
+        status = 200
+        headers = []
+        for raw_header in raw_headers.decode("ascii").split("\r\n"):
+            name, value = raw_header.split(":", 1)
+            if name.lower() == "status":
+                status = int(value.strip().split(" ", 1)[0])
+            else:
+                headers.append((name, value.strip()))
+        handler.send_response(status)
+        for name, value in headers:
+            handler.send_header(name, value)
+        handler.end_headers()
+        handler.wfile.write(response_body)
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path.startswith(KAMEO_PREFIX + "/"):
+                git_response(self)
+                return
             archive = ARCHIVES.get(self.path)
             if archive is None:
                 self.send_error(404, "C6 source replay permits only locked archive routes")
@@ -255,6 +355,9 @@ let
             self.end_headers()
             with open(archive, "rb") as source_archive:
                 self.wfile.write(source_archive.read())
+
+        def do_POST(self):
+            git_response(self)
 
         def log_message(self, format, *args):
             print("C6 source replay: " + format % args, flush=True)
@@ -327,12 +430,13 @@ let
         source = "${sourceReplayTls}/key.pem";
         mode = "0400";
       };
+      environment.etc."c6-source-replay/git".source = sourceReplayGit;
       networking.firewall.allowedTCPPorts = [ 443 ];
       systemd.services.c6-source-replay = {
         description = "C6 exact immutable GitHub archive replay";
         wantedBy = [ "multi-user.target" ];
         after = [ "network.target" ];
-        path = [ pkgs.python3 ];
+        path = [ pkgs.python3 pkgs.gitMinimal ];
         serviceConfig = {
           Type = "simple";
           Restart = "no";
@@ -514,6 +618,7 @@ let
           pkgs.openssh
           pkgs.coreutils
           pkgs.curl
+          pkgs.gitMinimal
           pkgs.gnutar
         ];
         environment = {
@@ -522,6 +627,7 @@ let
           # daemon's runtime dir. Fully offline.
           NIX_SSHOPTS = "-i /etc/lojix-c6/deploy_key -o UserKnownHostsFile=/run/lojix/known_hosts -o StrictHostKeyChecking=accept-new -o BatchMode=yes";
           GIT_SSH_COMMAND = "ssh -i /etc/lojix-c6/deploy_key -o UserKnownHostsFile=/run/lojix/known_hosts -o StrictHostKeyChecking=accept-new -o BatchMode=yes";
+          GIT_SSL_CAINFO = "${sourceReplayTls}/cert.pem";
         };
         serviceConfig = {
           Type = "simple";
@@ -581,6 +687,16 @@ let
             echo "C6 source replay verified $route narHash=$nar_hash lastModified=$last_modified archiveSha256=$archive_hash"
           done < "${sourceReplayArchives}/manifest.tsv"
           test "$replayed_count" = "${toString (builtins.length sourceReplayEntries)}"
+          # Cargo's locked Kameo dependency is a Git source.  Prove the exact
+          # finite smart-HTTP route can fetch the complete locked graph, and that its
+          # source tree is the lock-verified NAR before the daemon starts.
+          git clone https://github.com/LiGoldragon/kameo.git /run/lojix/kameo-probe
+          test "$(git -C /run/lojix/kameo-probe rev-parse HEAD)" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
+          test "$(git -C /run/lojix/kameo-probe rev-list --count HEAD)" = 417
+          mkdir -p /run/lojix/kameo-tree
+          git -C /run/lojix/kameo-probe archive f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01 | \
+            ${pkgs.gnutar}/bin/tar -C /run/lojix/kameo-tree -xf -
+          test "$(nix hash path --type sha256 --sri /run/lojix/kameo-tree)" = "${kameoReplayEntry.narHash}"
           if ${pkgs.curl}/bin/curl --fail --silent --show-error \
             --cacert "${sourceReplayTls}/cert.pem" \
             https://github.com/c6-source-replay-unmatched \
