@@ -122,15 +122,12 @@ let
         path = true;
       };
     };
-  deployedToplevelDrv =
-    let
-      path = "/nix/store/bix0y5slnhh16ggc6gp9qlyb5xlln9gp-nixos-system-mercury-26.11.20260813.0e251e2.drv";
-    in
-    builtins.appendContext path {
-      "${path}" = {
-        path = true;
-      };
-    };
+  # Keep the expected derivation as plain text.  Its store context would be
+  # captured by generated unit scripts and reintroduce its build-time closure
+  # through the VM system toplevel.  The runtime output above is the only path
+  # deliberately registered in the test VM; Lojix's real Eval produces this
+  # derivation before its Build.
+  deployedToplevelDrv = "/nix/store/bix0y5slnhh16ggc6gp9qlyb5xlln9gp-nixos-system-mercury-26.11.20260813.0e251e2.drv";
 
   # The immutable root flake and every direct input are present in the
   # deployer store before the daemon evaluates the exact GitHub revision.
