@@ -706,53 +706,79 @@ let
     exit "$status"
   '';
 
-  # The activation effect invokes ssh outside the Nix build child.  Preserve
-  # its exact command boundary with the same transparent fixture-only capture
-  # semantics as the Nix shim so an Activate terminal records its actual error.
-  lojixSshCommandCapture = pkgs.writeShellScriptBin "ssh" ''
-    set -u
-    original_umask="$(umask)"
-    umask 077
-    log=/run/lojix/ssh-command-capture.log
-    capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/ssh-command.XXXXXX)"
-    ${pkgs.coreutils}/bin/chmod 0700 "$capture_directory"
-    : > "$capture_directory/stdout"
-    : > "$capture_directory/stderr"
-    ${pkgs.coreutils}/bin/chmod 0600 "$capture_directory/stdout" "$capture_directory/stderr"
-    umask "$original_umask"
-    trap '${pkgs.coreutils}/bin/rm -rf "$capture_directory"' EXIT
+  # The activation effect invokes ssh outside the Nix build child. Capture only
+  # its three exact direct target commands; exec every other ssh invocation
+  # unchanged so Nix's ssh-ng transport retains its bidirectional protocol.
+  lojixSshCommandCapture =
+    activationTarget:
+    pkgs.writeShellScriptBin "ssh" ''
+      set -u
+      target_seen=0
+      activation_tag=
+      empty_shell_argument=$'\047\047'
+      for argument in "$@"; do
+        if test "$argument" = ${lib.escapeShellArg activationTarget}; then
+          target_seen=1
+        fi
+        case "$argument" in
+          "nix-env -p /nix/var/nix/profiles/system --set ${deployedToplevel} && ${deployedToplevel}/bin/switch-to-configuration boot")
+            activation_tag=stage-profile
+            ;;
+        esac
+        if test "$argument" = "bootctl set-default $empty_shell_argument"; then
+          activation_tag=clear-default
+        fi
+        if test "$argument" = "bootctl set-oneshot $empty_shell_argument"; then
+          activation_tag=clear-oneshot
+        fi
+      done
+      if test "$target_seen" -ne 1 || test -z "$activation_tag"; then
+        exec ${pkgs.openssh}/bin/ssh "$@"
+      fi
 
-    {
-      printf '%s\n' '=== C6 lojix daemon SSH command ==='
-      printf 'uid='; ${pkgs.coreutils}/bin/id -u
-      printf 'working-directory='; ${pkgs.coreutils}/bin/pwd
-      printf 'PATH=%s\n' "$PATH"
-      printf 'argv='
-      printf '%q ' "$@"
-      printf '\n'
-    } >> "$log"
+      original_umask="$(umask)"
+      umask 077
+      log=/run/lojix/ssh-command-capture.log
+      capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/ssh-command.XXXXXX)"
+      ${pkgs.coreutils}/bin/chmod 0700 "$capture_directory"
+      : > "$capture_directory/stdout"
+      : > "$capture_directory/stderr"
+      ${pkgs.coreutils}/bin/chmod 0600 "$capture_directory/stdout" "$capture_directory/stderr"
+      umask "$original_umask"
+      trap '${pkgs.coreutils}/bin/rm -rf "$capture_directory"' EXIT
 
-    set +e
-    ${pkgs.openssh}/bin/ssh "$@" > "$capture_directory/stdout" 2> "$capture_directory/stderr"
-    status=$?
-    set -e
+      {
+        printf '%s\n' '=== C6 lojix daemon SSH command ==='
+        printf 'uid='; ${pkgs.coreutils}/bin/id -u
+        printf 'working-directory='; ${pkgs.coreutils}/bin/pwd
+        printf 'PATH=%s\n' "$PATH"
+        printf 'activation-tag=%s\n' "$activation_tag"
+        printf 'argv='
+        printf '%q ' "$@"
+        printf '\n'
+      } >> "$log"
 
-    {
-      printf 'exit-status=%s\n' "$status"
-      printf '%s\n' '--- stdout ---'
+      set +e
+      ${pkgs.openssh}/bin/ssh "$@" > "$capture_directory/stdout" 2> "$capture_directory/stderr"
+      status=$?
+      set -e
+
+      {
+        printf 'exit-status=%s\n' "$status"
+        printf '%s\n' '--- stdout ---'
+        ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
+        printf '%s\n' '--- stderr ---'
+        ${pkgs.coreutils}/bin/cat "$capture_directory/stderr"
+        printf '%s\n' '=== end C6 lojix daemon SSH command ==='
+      } >> "$log"
+
       ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
-      printf '%s\n' '--- stderr ---'
-      ${pkgs.coreutils}/bin/cat "$capture_directory/stderr"
-      printf '%s\n' '=== end C6 lojix daemon SSH command ==='
-    } >> "$log"
-
-    ${pkgs.coreutils}/bin/cat "$capture_directory/stdout"
-    ${pkgs.coreutils}/bin/cat "$capture_directory/stderr" >&2
-    if test "$status" -gt 128 && test "$status" -le 192; then
-      kill -"$((status - 128))" "$$"
-    fi
-    exit "$status"
-  '';
+      ${pkgs.coreutils}/bin/cat "$capture_directory/stderr" >&2
+      if test "$status" -gt 128 && test "$status" -le 192; then
+        kill -"$((status - 128))" "$$"
+      fi
+      exit "$status"
+    '';
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
   # half lives only on the deployer; public half authorises root on the target.
@@ -1192,7 +1218,7 @@ let
             /run/lojix/nix-command-capture.log \
             /run/lojix/ssh-command-capture.log
           umask "$original_umask"
-          export PATH="${lojixNixCommandCapture}/bin:${lojixSshCommandCapture}/bin:$PATH"
+          export PATH="${lojixNixCommandCapture}/bin:${lojixSshCommandCapture "root@${criomeDomainName}"}/bin:$PATH"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
         '';
       };
@@ -1479,7 +1505,10 @@ assertModel (
       assert "=== C6 lojix daemon SSH command ===" in daemon_ssh_capture, daemon_ssh_capture
       assert f"nix-env -p /nix/var/nix/profiles/system --set {expected_closure}" in daemon_ssh_capture, daemon_ssh_capture
       assert f"{expected_closure}/bin/switch-to-configuration boot" in daemon_ssh_capture, daemon_ssh_capture
-      assert daemon_ssh_capture.count("exit-status=0") >= 3, daemon_ssh_capture
+      assert "activation-tag=stage-profile" in daemon_ssh_capture, daemon_ssh_capture
+      assert "activation-tag=clear-default" in daemon_ssh_capture, daemon_ssh_capture
+      assert "activation-tag=clear-oneshot" in daemon_ssh_capture, daemon_ssh_capture
+      assert daemon_ssh_capture.count("exit-status=0") == 3, daemon_ssh_capture
 
       print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
             "the target's system profile generation is the deployed closure.")
