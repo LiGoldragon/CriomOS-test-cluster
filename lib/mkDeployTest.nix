@@ -215,6 +215,7 @@ let
       mkdir -p "$out/LiGoldragon"
       export GIT_CONFIG_GLOBAL=/dev/null
       git clone --bare ${kameoGitBundle} "$repository"
+      git -C "$repository" symbolic-ref HEAD refs/heads/main
       actual_commit="$(git -C "$repository" rev-parse refs/heads/main)"
       test "$actual_commit" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
       actual_tree="$(git -C "$repository" rev-parse "$actual_commit^{tree}")"
