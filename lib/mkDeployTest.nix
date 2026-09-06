@@ -1244,19 +1244,19 @@ assertModel (
       expected_slot = "Current"
       deployer.wait_until_succeeds(
           "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
+          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
           f"| grep -F {expected_closure}",
           timeout=600,
       )
       deployer.wait_until_succeeds(
           "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
+          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
           "| grep -F Completed",
           timeout=600,
       )
       deployer.wait_until_succeeds(
           "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
-          "${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
+          "${lojixClis}/bin/lojix 'Query.ByNode.{ ${clusterName} ${vmNode} None }' "
           "| grep -F Succeeded",
           timeout=600,
       )
