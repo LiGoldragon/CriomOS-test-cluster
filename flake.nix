@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:LiGoldragon/nixpkgs?ref=main";
 
-    criomos.url = "github:LiGoldragon/CriomOS/6d6aa72dcf69797cceae9c4182b3d0d961eddb87";
+    criomos.url = "github:LiGoldragon/CriomOS/add8a445052e9517a10eff7877ed7608aca871b2";
     criomos.inputs.nixpkgs.follows = "nixpkgs";
     criomos.inputs.criomos-lib.follows = "criomos-lib";
 
@@ -25,14 +25,6 @@
     # daemon and both framed-signal clients are self-contained artifacts, so
     # this input keeps Lojix's own toolchain pins.
     lojix.url = "github:LiGoldragon/lojix/7e29c37f51092e5a20abf88c670aabd2acee6e52";
-
-    # The immutable root that owns the mercury fixture output exercised by C6.
-    # The evolving C6 driver is deliberately a separate checkout, so its
-    # current source path cannot stand in for this RequireImmutable reference.
-    c6DeploymentFixture = {
-      url = "github:LiGoldragon/CriomOS-test-cluster/1eed8642f9ec6b91bea582e1beacacd5a66157fe";
-      flake = false;
-    };
 
     persona-spirit.url = "github:LiGoldragon/persona-spirit";
     persona-spirit-v010.url = "github:LiGoldragon/persona-spirit?ref=v0.1.0";

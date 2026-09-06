@@ -21,9 +21,9 @@
 #       CLIs present. The deploy key authorises root@target; the target's
 #       <node>.<cluster>.criome address resolves (networking.hosts) to the
 #       target's test-network IP; ssh-ng host-key trust is pre-seeded. The whole
-#       immutable root test-cluster flake and its locked input closure are
-#       pinned into its store, so the daemon evaluates the same revision through
-#       its production GitHub reference entirely offline.
+#       immutable CriomOS root flake and its locked input closure are pinned
+#       into its store, so the daemon evaluates the same revision through its
+#       production GitHub reference entirely offline.
 #   - target: the vmNode (mercury) as a REAL CriomOS nixosSystem built from its
 #       horizon PROJECTION (the same projections-match-fieldlab pins), plus the
 #       test-substrate UEFI guestModule: writable store, require-sigs=false,
@@ -35,9 +35,10 @@
 #       it to its role).
 #
 # THE DEPLOY + ASSERTION:
-#   The deployer submits a FullOs `Boot` Deploy of the target's config
-#   (build_attribute = the root flake's `mercury-toplevel`, which IS the
-#   target's projected system — cluster-data-generated, not hand-written). The
+#   The deployer submits a BaseHost `SetBootProfile` Deploy of the target's
+#   config (build_attribute = the CriomOS root's normal `target` toplevel,
+#   which IS the target's materialized projected system — cluster-data-generated,
+#   not hand-written). The
 #   daemon runs `nix-env --set <closure> && switch-to-configuration boot` on the
 #   target: this SETS the system profile generation (the C6 ground truth) and
 #   stages the config for the next boot WITHOUT tearing down the running
@@ -53,8 +54,8 @@
 #
 # THE INTEGRATION RISKS, HEAD-ON (Spirit [dqg3] — unblock the blocker IN the
 # test, do not just report "blocked"):
-#   1. OFFLINE eval+build: the immutable root flake, its locked input closure,
-#      and selected mercury closure are present in the deployer store. The
+#   1. OFFLINE eval+build: the immutable CriomOS root flake, its locked input
+#      closure, and selected mercury closure are present in the deployer store. The
 #      daemon's eval/build run with the node's offline Nix config; no network or
 #      substituters.
 #   2. ADDRESS resolution: networking.hosts maps <node>.<cluster>.criome to the
@@ -99,15 +100,17 @@ let
   };
   horizonDefinitionPath = inputs.horizon-config.lib.horizonDefinitionPath horizonDefinition;
 
-  # This committed fixture revision owns `packages.<system>.mercury-toplevel`.
-  # The smoke's evolving driver stays outside that deployment source, while its
-  # selected public Horizon input is still composed from this checked-out data.
-  deployFlakeReference = "github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe";
-  deployFlakeSource = inputs.c6DeploymentFixture.outPath;
-  # The root fixture's output is evaluated independently below.  The driver
-  # itself changes only the C6 harness, so this matching committed fixture
-  # output is retained as the realised target closure in the deployer store.
-  deployedToplevel = self.packages.${system}.mercury-toplevel;
+  # The normal CriomOS root owns all four materialized input names: `horizon`,
+  # `system`, `deployment`, and `secrets`. The smoke driver remains a separate
+  # test-cluster checkout; it cannot stand in for the RequireImmutable source.
+  deployFlakeReference = "github:LiGoldragon/CriomOS/add8a445052e9517a10eff7877ed7608aca871b2";
+  deployFlakeSource = inputs.criomos.outPath;
+  # This closure came from a real Lojix BuildOnly materialization of the exact
+  # definition below, `(fieldlab, mercury)`, BaseHost, NoSecrets, and the same
+  # immutable CriomOS source/selector. The VM request regenerates the four
+  # inputs and must reach this content-addressed target again.
+  deployedToplevel = "/nix/store/rdlmvd1bhax248fzkgxwb5lq04bbivcd-nixos-system-mercury-26.11.20260813.0e251e2";
+  deployedToplevelDrv = "/nix/store/mkqzyi7vsicjkxiv40wy4rd1n2dnd2gj-nixos-system-mercury-26.11.20260813.0e251e2.drv";
 
   # The immutable root flake and every direct input are present in the
   # deployer store before the daemon evaluates the exact GitHub revision.
@@ -126,9 +129,8 @@ let
       ++ inputs.nixpkgs.lib.optionals (input ? inputs) (inputSources input)
     ) (builtins.attrValues nested);
   criomosInputSources = inputSources inputs.criomos;
-  deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources ++ deploymentFixtureInputSources
+    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources
   );
 
   # Direct immutable github: roots bypass registries and Nix has no supported
@@ -136,7 +138,7 @@ let
   # in a third test VM. The submitted Lojix reference remains github:, and the
   # deployer verifies Nix's resolved source path and narHash before it starts.
   sourceReplayAddress = "192.168.1.3";
-  sourceReplayRoute = "/LiGoldragon/CriomOS-test-cluster/archive/1eed8642f9ec6b91bea582e1beacacd5a66157fe.tar.gz";
+  sourceReplayRoute = "/LiGoldragon/CriomOS/archive/add8a445052e9517a10eff7877ed7608aca871b2.tar.gz";
   sourceReplayTls =
     pkgs.runCommand "c6-source-replay-tls"
       {
@@ -192,6 +194,7 @@ let
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain("/etc/c6-source-replay/cert.pem", "/etc/c6-source-replay/key.pem")
     server.socket = context.wrap_socket(server.socket, server_side=True)
+    print("C6 source replay listening on 0.0.0.0:443", flush=True)
     server.serve_forever()
   '';
 
@@ -255,6 +258,7 @@ let
         source = "${sourceReplayTls}/key.pem";
         mode = "0400";
       };
+      networking.firewall.allowedTCPPorts = [ 443 ];
       systemd.services.c6-source-replay = {
         description = "C6 exact immutable GitHub archive replay";
         wantedBy = [ "multi-user.target" ];
@@ -435,6 +439,7 @@ let
           pkgs.nix
           pkgs.openssh
           pkgs.coreutils
+          pkgs.curl
         ];
         environment = {
           # ssh-ng / nix-copy uses the deploy key + learns the target host key
@@ -462,9 +467,25 @@ let
           # narHash, so require Nix's resolved metadata to match the exact
           # lock-derived path, hash, and revision. Lojix then evaluates the
           # unchanged URI under the same Nix configuration.
-          export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
+          for _ in $(seq 1 30); do
+            if ${pkgs.curl}/bin/curl --fail --silent --show-error \
+              --cacert "${sourceReplayTls}/cert.pem" \
+              "https://github.com${sourceReplayRoute}" \
+              --output /run/lojix/root-flake-archive.tar.gz; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /run/lojix/root-flake-archive.tar.gz
+          if ${pkgs.curl}/bin/curl --fail --silent --show-error \
+            --cacert "${sourceReplayTls}/cert.pem" \
+            https://github.com/c6-source-replay-unmatched \
+            --output /run/lojix/unmatched-response; then
+            echo "C6 source replay served an unmatched route" >&2
+            exit 1
+          fi
           metadata=/run/lojix/root-flake-metadata.json
           for _ in $(seq 1 30); do
             if nix flake metadata --refresh --json "${deployFlakeReference}" > "$metadata"; then
@@ -475,8 +496,8 @@ let
           test -s "$metadata"
           ${pkgs.jq}/bin/jq -e \
             --arg source "${deployFlakeSource}" \
-            --arg nar_hash "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc=" \
-            --arg revision "1eed8642f9ec6b91bea582e1beacacd5a66157fe" \
+            --arg nar_hash "sha256-TOnQ7iBNIdVHDodwhybwyCDhSPoZwdOd8s5pLxtbh0E=" \
+            --arg revision "add8a445052e9517a10eff7877ed7608aca871b2" \
             '.path == $source and .locked.narHash == $nar_hash and .revision == $revision' \
             "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
@@ -581,12 +602,11 @@ assertModel (
       base_system = ${vmNode}.succeed("readlink -f /run/current-system").strip()
 
       # --- submit the REAL production deploy over the OWNER socket -------------
-      # FullOs Switch of the TARGET's own projected config; build_attribute =
-      # `systemToplevel` (the deploy flake's output = the target's projected
-      # system, cluster-data-generated). The daemon mints the deployment id and
-      # runs the pipeline autonomously (build -> copy -> activate); the client
-      # returns immediately (S4b decoupling).
-      # `Boot` (not `Switch`): the daemon runs `nix-env --set <closure> &&
+      # BaseHost SetBootProfile of the TARGET's own materialized config; the
+      # normal CriomOS root's `target` output is selected directly. The daemon
+      # mints the deployment id and runs the pipeline autonomously (build ->
+      # copy -> activate); the client returns immediately.
+      # `SetBootProfile` runs `nix-env --set <closure> &&
       # switch-to-configuration BOOT`. `boot` sets the system profile generation
       # (the C6 ground truth) and stages the new config for the NEXT boot WITHOUT
       # restarting the running system's services — so it does not disrupt the
@@ -600,10 +620,10 @@ assertModel (
           "${lojixClis}/bin/meta-lojix "
           "'Deploy.Host.{ ${clusterName} ${vmNode} BaseHost ${horizonDefinitionPath} "
           "NoSecrets ${deployFlakeReference} { ssh-ng://root@${criomeDomainName} root@${criomeDomainName} } "
-          "Horizon { packages.${system}.mercury-toplevel } NixosSystemdBootV1 SetBootProfile RequireImmutable None [] }'"
+          "Horizon { nixosConfigurations.target.config.system.build.toplevel } NixosSystemdBootV1 SetBootProfile RequireImmutable None [] }'"
       )
       print("deploy reply:", deploy_reply)
-      assert "Deployed" in deploy_reply, f"deploy not accepted: {deploy_reply}"
+      assert "DeployAccepted" in deploy_reply, f"deploy not accepted: {deploy_reply}"
 
       # read the daemon's durable deploy state via the ORDINARY CLI (Query ByNode)
       # — used for observability of the silent deploy (the generation-activation
@@ -615,15 +635,17 @@ assertModel (
               "'Query.ByNode.{ ${clusterName} ${vmNode} None }'"
           )
 
-      # The EXACT closure the daemon evals+builds — the deploy flake's
-      # The immutable root flake's mercury output is the same public output the
-      # daemon evaluates. This is the activated-generation ground truth.
+      # The exact closure the daemon evaluates/builds from the normal immutable
+      # CriomOS root under the real four Lojix-generated input directories.
+      # This is the activated-generation ground truth.
       expected_closure = "${deployedToplevel}"
+      expected_derivation = "${deployedToplevelDrv}"
       print("expected deployed closure:", expected_closure)
       # the <drv>^* fix: the expected artifact is a realised nixos-system dir,
       # NEVER a bare .drv.
       assert not expected_closure.endswith(".drv"), expected_closure
       assert "nixos-system-${vmNode}" in expected_closure, expected_closure
+      assert expected_derivation.endswith(".drv"), expected_derivation
 
       # The daemon is SILENT during the deploy (no logs); it owns the
       # build->copy->activate pipeline after AcceptedDeploy. The ground truth of
@@ -656,9 +678,10 @@ assertModel (
       # The daemon is silent and the live-set write commits after the target's
       # profile flip, so poll the durable Query until the node's record carries the
       # deployed closure, then assert the three load-bearing facts: the node name,
-      # the terminal generation SLOT, and the deployed ClosurePath (the SAME
-      # closure the profile assertion checked). The durable record for this deploy
-      # is `(<gen> <dep> ${cluster} ${vmNode} FullOs Boot Current <closure>)` —
+      # the generated artifact, the activation effect, and the deployed ClosurePath
+      # (the SAME closure the profile assertion checked). The durable generation for
+      # this deploy is `(<gen> <dep> ${cluster} ${vmNode} BaseHost BootProfile Current
+      # <closure>)` —
       # the live generation lands in the `Current` slot (the terminal deployed
       # state the query exposes), so `Current` is the durable state this proves.
       expected_slot = "Current"
@@ -668,13 +691,26 @@ assertModel (
           f"| grep -F {expected_closure}",
           timeout=600,
       )
+      deployer.wait_until_succeeds(
+          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
+          f"${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
+          "| grep -F Completed",
+          timeout=600,
+      )
+      deployer.wait_until_succeeds(
+          "LOJIX_ORDINARY_SOCKET=/run/lojix/ordinary.sock "
+          f"${lojixClis}/bin/lojix 'Query.ByNode.{{ ${clusterName} ${vmNode} None }}' "
+          "| grep -F Succeeded",
+          timeout=600,
+      )
       final_query = query_node()
       print("durable deploy state:", final_query)
+      assert "Queried" in final_query, f"ordinary query was not accepted: {final_query}"
       # Assert the schema-owned positional Generation fragment — node + kind +
-      # activationKind + terminal slot together (`${vmNode} FullOs Boot Current`),
+      # activationKind + terminal slot together (`${vmNode} BaseHost BootProfile Current`),
       # not a loose lone-`Current` substring that could match elsewhere. This ties
       # the deployed node to its terminal generation slot in one schema shape.
-      node_generation = "${vmNode} FullOs Boot " + expected_slot
+      node_generation = "${vmNode} BaseHost BootProfile " + expected_slot
       assert node_generation in final_query, (
           f"durable Query reply does not record {node_generation!r}: {final_query}"
       )
@@ -683,6 +719,12 @@ assertModel (
       # agree.
       assert expected_closure in final_query, (
           f"durable Query reply does not record the deployed closure {expected_closure}: {final_query}"
+      )
+      assert "Completed" in final_query, (
+          f"durable Query reply does not record a completed deployment: {final_query}"
+      )
+      assert "Succeeded" in final_query, (
+          f"durable Query reply does not record a terminal Succeeded deployment: {final_query}"
       )
 
       # --- ASSERT: the activated artifact is a REAL nixos-system (the <drv>^* fix
@@ -693,7 +735,7 @@ assertModel (
       ${vmNode}.succeed(f"test -e {expected_closure}/activate")
       # it is genuinely the deployed closure in the target's store (the daemon's
       # nix copy --to ssh-ng landed it there node-to-node).
-      ${vmNode}.succeed(f"nix-store --query --deriver {expected_closure}")
+      ${vmNode}.succeed(f"test \"$(nix-store --query --deriver {expected_closure})\" = {expected_derivation}")
 
       print("C6 GREEN: lojix build->copy->generation-activated a real nixos-system into ${vmNode}; "
             "the target's system profile generation is the deployed closure.")
