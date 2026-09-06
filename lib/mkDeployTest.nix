@@ -128,7 +128,10 @@ let
   criomosInputSources = inputSources inputs.criomos;
   deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources ++ deploymentFixtureInputSources
+    [ deployFlakeSource ]
+    ++ directInputSources
+    ++ criomosInputSources
+    ++ deploymentFixtureInputSources
   );
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
@@ -388,19 +391,6 @@ let
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          # Direct immutable github: references deliberately bypass flake
-          # registries. Seed Nix's own fetcher cache from the exact raw source
-          # and its complete locked identity, then archive its locked closure.
-          # `system.extraDependencies` already carries those source paths; the
-          # fixture never changes the Lojix-admitted GitHub reference or relies
-          # on an ambient host fetcher cache.
-          echo "C6 fixture nix executable: $(command -v nix)"
-          nix --version
-          seeded_source="$(nix eval --impure --raw --expr 'let source = builtins.fetchTree { type = "github"; owner = "LiGoldragon"; repo = "CriomOS-test-cluster"; rev = "1eed8642f9ec6b91bea582e1beacacd5a66157fe"; narHash = "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc="; lastModified = 1788651371; }; in source.outPath')"
-          test "$seeded_source" = "${deployFlakeSource}"
-          echo "C6 fixture fetcher seed: github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe -> $seeded_source"
-          nix flake metadata --offline --json "${deployFlakeReference}" \
-            | ${pkgs.jq}/bin/jq -r '"C6 fixture source identity: original=\(.originalUrl); resolved=\(.resolvedUrl); path=\(.path); narHash=\(.locked.narHash)"'
           nix flake archive --offline "${deployFlakeReference}" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
