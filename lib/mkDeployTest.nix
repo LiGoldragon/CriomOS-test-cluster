@@ -642,9 +642,17 @@ let
   # an alternate evaluator.
   lojixNixCommandCapture = pkgs.writeShellScriptBin "nix" ''
     set -u
+    original_umask="$(umask)"
     umask 077
     log=/run/lojix/nix-command-capture.log
+    : > "$log"
+    ${pkgs.coreutils}/bin/chmod 0600 "$log"
     capture_directory="$(${pkgs.coreutils}/bin/mktemp -d /run/lojix/nix-command.XXXXXX)"
+    ${pkgs.coreutils}/bin/chmod 0700 "$capture_directory"
+    : > "$capture_directory/stdout"
+    : > "$capture_directory/stderr"
+    ${pkgs.coreutils}/bin/chmod 0600 "$capture_directory/stdout" "$capture_directory/stderr"
+    umask "$original_umask"
     trap '${pkgs.coreutils}/bin/rm -rf "$capture_directory"' EXIT
 
     {
