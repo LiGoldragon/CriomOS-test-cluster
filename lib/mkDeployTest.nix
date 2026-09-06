@@ -104,31 +104,15 @@ let
   # selected public Horizon input is still composed from this checked-out data.
   deployFlakeReference = "github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe";
   deployFlakeSource = inputs.c6DeploymentFixture.outPath;
-  # The production request remains the immutable GitHub reference above.  The
-  # hermetic deployer needs an exact registry entry for that same reference,
-  # however: merely retaining its source path in the store does not populate a
-  # fresh VM's fetcher cache, and Nix would otherwise try github.com before it
-  # can use the retained bytes.  This one-entry registry is part of the C6
-  # substrate, not a Lojix source fallback or a relaxed admission policy.
-  deployFlakeRegistry = pkgs.writeText "c6-deployment-flake-registry.json" (
-    builtins.toJSON {
-      version = 2;
-      flakes = [
-        {
-          from = {
-            type = "github";
-            owner = "LiGoldragon";
-            repo = "CriomOS-test-cluster";
-            rev = "1eed8642f9ec6b91bea582e1beacacd5a66157fe";
-          };
-          to = {
-            type = "path";
-            path = toString deployFlakeSource;
-          };
-        }
-      ];
-    }
-  );
+  # Direct immutable github: references intentionally do not consult a flake
+  # registry.  The C6-only Nix wrapper preserves the admitted reference and
+  # redirects its evaluation to the exact store-resident source instead.  It
+  # is inherited by every daemon child Nix process; it is not a Lojix fallback
+  # or a production source policy.
+  deployNix = pkgs.writeShellScriptBin "nix" ''
+    exec ${pkgs.nix}/bin/nix \
+      --override-flake '${deployFlakeReference}' 'path:${deployFlakeSource}' "$@"
+  '';
   # The root fixture's output is evaluated independently below.  The driver
   # itself changes only the C6 harness, so this matching committed fixture
   # output is retained as the realised target closure in the deployer store.
@@ -306,20 +290,16 @@ let
         pkgs.nix
       ];
 
-      # The daemon's nix must be OFFLINE + trust unsigned local closures (the
-      # deployed system is locally built, unsigned) + never reach a builder or
-      # substituter (hermetic). The KEY hermetic-eval setting:
-      # The exact one-entry registry maps the immutable GitHub request to the
-      # source already retained by system.extraDependencies.  Thus the daemon's
-      # production `nix eval --refresh …` needs no network on a fresh VM, while
-      # Lojix still admits and records the immutable GitHub reference itself.
+      # The daemon's Nix trusts the unsigned local test closure and never
+      # reaches a builder or substituter.  `deployNix` supplies the C6-only
+      # direct-reference override for each daemon child process.
       nix.settings = {
         substituters = lib.mkForce [ ];
         require-sigs = lib.mkForce false;
         builders = lib.mkForce "";
         tarball-ttl = 999999999;
-        use-registries = true;
-        flake-registry = deployFlakeRegistry;
+        use-registries = false;
+        flake-registry = "";
         experimental-features = [
           "nix-command"
           "flakes"
@@ -409,18 +389,14 @@ let
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          # The generated /etc/nix/nix.conf carries this same registry.  Pass
-          # it explicitly as well: the service's first `nix flake archive`
-          # runs before the daemon and must establish the fresh VM cache using
-          # this exact immutable source, without consulting github.com.
-          export NIX_CONFIG="use-registries = true
-          flake-registry = ${deployFlakeRegistry}
-          tarball-ttl = 999999999"
-          echo "C6 fixture nix executable: $(command -v nix)"
-          nix --version
-          echo "C6 fixture NIX_CONFIG: use-registries=true; flake-registry=${deployFlakeRegistry}; tarball-ttl=999999999"
+          export PATH=${deployNix}/bin:"$PATH"
+          echo "C6 fixture Nix wrapper: $(command -v nix)"
+          echo "C6 fixture underlying Nix: ${pkgs.nix}/bin/nix"
+          ${pkgs.nix}/bin/nix --version
+          echo "C6 fixture Nix settings: use-registries=false; flake-registry=disabled"
+          echo "C6 fixture override: ${deployFlakeReference} -> path:${deployFlakeSource}"
           nix flake metadata --offline --json "${deployFlakeReference}" \
-            | ${pkgs.jq}/bin/jq -r '"C6 fixture registry resolution: \(.resolvedUrl) -> \(.path)"'
+            | ${pkgs.jq}/bin/jq -r '"C6 fixture override identity: original=\(.originalUrl); resolved=\(.resolvedUrl); path=\(.path); narHash=\(.locked.narHash)"'
           nix flake archive --offline "${deployFlakeReference}" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
