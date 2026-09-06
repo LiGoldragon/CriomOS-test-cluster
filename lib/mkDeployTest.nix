@@ -104,15 +104,6 @@ let
   # selected public Horizon input is still composed from this checked-out data.
   deployFlakeReference = "github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe";
   deployFlakeSource = inputs.c6DeploymentFixture.outPath;
-  # Direct immutable github: references intentionally do not consult a flake
-  # registry.  The C6-only Nix wrapper preserves the admitted reference and
-  # redirects its evaluation to the exact store-resident source instead.  It
-  # is inherited by every daemon child Nix process; it is not a Lojix fallback
-  # or a production source policy.
-  deployNix = pkgs.writeShellScriptBin "nix" ''
-    exec ${pkgs.nix}/bin/nix \
-      --override-flake '${deployFlakeReference}' 'path:${deployFlakeSource}' "$@"
-  '';
   # The root fixture's output is evaluated independently below.  The driver
   # itself changes only the C6 harness, so this matching committed fixture
   # output is retained as the realised target closure in the deployer store.
@@ -137,7 +128,10 @@ let
   criomosInputSources = inputSources inputs.criomos;
   deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources ++ deploymentFixtureInputSources
+    [ deployFlakeSource ]
+    ++ directInputSources
+    ++ criomosInputSources
+    ++ deploymentFixtureInputSources
   );
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
@@ -290,9 +284,17 @@ let
         pkgs.nix
       ];
 
-      # The daemon's Nix trusts the unsigned local test closure and never
-      # reaches a builder or substituter.  `deployNix` supplies the C6-only
-      # direct-reference override for each daemon child process.
+      # The daemon's nix must be OFFLINE + trust unsigned local closures (the
+      # deployed system is locally built, unsigned) + never reach a builder or
+      # substituter (hermetic). The KEY hermetic-eval setting:
+      # `tarball-ttl` very large + `use-registries = false` makes the daemon's
+      # production `nix eval --refresh …` RE-USE the store-resident github-pinned
+      # input copies (pinned into the node store by system.extraDependencies via
+      # the deploy flake's evalSources) instead of re-unpacking them from github
+      # (which would need the network). So the deploy flake's plain
+      # github-pinned lock resolves entirely from store offline — no lock
+      # rewriting, no `--offline` flag on the daemon, deployed closure identical
+      # to the in-process build.
       nix.settings = {
         substituters = lib.mkForce [ ];
         require-sigs = lib.mkForce false;
@@ -389,14 +391,6 @@ let
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          export PATH=${deployNix}/bin:"$PATH"
-          echo "C6 fixture Nix wrapper: $(command -v nix)"
-          echo "C6 fixture underlying Nix: ${pkgs.nix}/bin/nix"
-          ${pkgs.nix}/bin/nix --version
-          echo "C6 fixture Nix settings: use-registries=false; flake-registry=disabled"
-          echo "C6 fixture override: ${deployFlakeReference} -> path:${deployFlakeSource}"
-          nix flake metadata --offline --json "${deployFlakeReference}" \
-            | ${pkgs.jq}/bin/jq -r '"C6 fixture override identity: original=\(.originalUrl); resolved=\(.resolvedUrl); path=\(.path); narHash=\(.locked.narHash)"'
           nix flake archive --offline "${deployFlakeReference}" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
