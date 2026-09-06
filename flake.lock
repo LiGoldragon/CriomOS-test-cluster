@@ -479,6 +479,23 @@
         "type": "github"
       }
     },
+    "c6DeploymentFixture": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788651371,
+        "narHash": "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc=",
+        "owner": "LiGoldragon",
+        "repo": "CriomOS-test-cluster",
+        "rev": "1eed8642f9ec6b91bea582e1beacacd5a66157fe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "LiGoldragon",
+        "repo": "CriomOS-test-cluster",
+        "rev": "1eed8642f9ec6b91bea582e1beacacd5a66157fe",
+        "type": "github"
+      }
+    },
     "chroma": {
       "inputs": {
         "flake-utils": "flake-utils_3",
@@ -2474,17 +2491,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1788651113,
+        "lastModified": 1788656757,
         "narHash": "sha256-mi4dbgbXNXGyB3wmzC4kxSfYm2gKzxmszH3MuM8OijQ=",
         "owner": "LiGoldragon",
         "repo": "criomos-horizon-config",
-        "rev": "1f58fc5ef85d95c27049767726e25dc60b7009e5",
+        "rev": "7050afef14bcfe649c0d05bdaa681d1577cafc46",
         "type": "github"
       },
       "original": {
         "owner": "LiGoldragon",
         "repo": "criomos-horizon-config",
-        "rev": "1f58fc5ef85d95c27049767726e25dc60b7009e5",
+        "rev": "7050afef14bcfe649c0d05bdaa681d1577cafc46",
         "type": "github"
       }
     },
@@ -3904,6 +3921,7 @@
           "criomos",
           "brightness-ctl"
         ],
+        "c6DeploymentFixture": "c6DeploymentFixture",
         "clavifaber": [
           "criomos",
           "clavifaber"

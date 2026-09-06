@@ -103,7 +103,10 @@ let
   # The smoke's evolving driver stays outside that deployment source, while its
   # selected public Horizon input is still composed from this checked-out data.
   deployFlakeReference = "github:LiGoldragon/CriomOS-test-cluster?rev=1eed8642f9ec6b91bea582e1beacacd5a66157fe";
-  deployFlakeSource = self.outPath;
+  deployFlakeSource = inputs.c6DeploymentFixture.outPath;
+  # The root fixture's output is evaluated independently below.  The driver
+  # itself changes only the C6 harness, so this matching committed fixture
+  # output is retained as the realised target closure in the deployer store.
   deployedToplevel = self.packages.${system}.mercury-toplevel;
 
   # The immutable root flake and every direct input are present in the
@@ -112,22 +115,23 @@ let
   directInputSources = inputs.nixpkgs.lib.concatMap (
     input: inputs.nixpkgs.lib.optional (input ? outPath) input.outPath
   ) (builtins.attrValues (builtins.removeAttrs inputs [ "self" ]));
-  criomosInputSources =
+  inputSources =
+    flake:
     let
-      walk =
-        flake:
-        let
-          nested = flake.inputs or { };
-        in
-        inputs.nixpkgs.lib.concatMap (
-          input:
-          inputs.nixpkgs.lib.optional (input ? outPath) input.outPath
-          ++ inputs.nixpkgs.lib.optionals (input ? inputs) (walk input)
-        ) (builtins.attrValues nested);
+      nested = flake.inputs or { };
     in
-    walk inputs.criomos;
+    inputs.nixpkgs.lib.concatMap (
+      input:
+      inputs.nixpkgs.lib.optional (input ? outPath) input.outPath
+      ++ inputs.nixpkgs.lib.optionals (input ? inputs) (inputSources input)
+    ) (builtins.attrValues nested);
+  criomosInputSources = inputSources inputs.criomos;
+  deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources
+    [ deployFlakeSource ]
+    ++ directInputSources
+    ++ criomosInputSources
+    ++ deploymentFixtureInputSources
   );
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
