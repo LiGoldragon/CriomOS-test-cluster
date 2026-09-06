@@ -361,6 +361,7 @@ let
         serviceConfig = {
           Type = "simple";
           Restart = "no";
+          TimeoutStartSec = "120s";
           StateDirectory = "lojix";
           RuntimeDirectory = "lojix";
         };
@@ -445,9 +446,29 @@ assertModel (
       start_all()
 
       # --- the deployer's fixed daemon comes up with both sockets ---------------
-      deployer.wait_for_unit("lojix-daemon.service")
-      deployer.wait_for_file("/run/lojix/ordinary.sock")
-      deployer.wait_for_file("/run/lojix/owner.sock")
+      # `Type=simple` becomes active while its pre-daemon setup still runs.
+      # Surface that setup's journal early if configuration writing or the
+      # hermetic flake cache preparation fails; the actual socket assertions
+      # below remain the service-readiness boundary.
+      for _ in range(120):
+          if deployer.execute("test -S /run/lojix/ordinary.sock && test -S /run/lojix/owner.sock")[0] == 0:
+              break
+          if deployer.execute("systemctl --quiet is-failed lojix-daemon.service")[0] == 0:
+              break
+          deployer.sleep(1)
+      else:
+          journal = deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1]
+          print("=== lojix daemon startup journal ===")
+          print(journal)
+          raise AssertionError("lojix daemon did not create both sockets within 120 seconds")
+      if deployer.execute("systemctl --quiet is-failed lojix-daemon.service")[0] == 0:
+          journal = deployer.execute("journalctl -u lojix-daemon.service --no-pager")[1]
+          print("=== failed lojix daemon startup journal ===")
+          print(journal)
+          raise AssertionError("lojix daemon service failed before its sockets were ready")
+      deployer.succeed("systemctl is-active --quiet lojix-daemon.service")
+      deployer.wait_for_file("/run/lojix/ordinary.sock", timeout=30)
+      deployer.wait_for_file("/run/lojix/owner.sock", timeout=30)
       # both sockets at the production modes (ordinary 0660, owner 0600) — the
       # real lojix-write-configuration -> rkyv -> daemon path set them.
       deployer.succeed("test \"$(stat -c %a /run/lojix/ordinary.sock)\" = 660")
