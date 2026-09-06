@@ -216,6 +216,7 @@ let
       export GIT_CONFIG_GLOBAL=/dev/null
       git clone --bare ${kameoGitBundle} "$repository"
       git -C "$repository" symbolic-ref HEAD refs/heads/main
+      test "$(git -C "$repository" symbolic-ref HEAD)" = refs/heads/main
       actual_commit="$(git -C "$repository" rev-parse refs/heads/main)"
       test "$actual_commit" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
       actual_tree="$(git -C "$repository" rev-parse "$actual_commit^{tree}")"
@@ -701,6 +702,7 @@ let
           # source tree is the lock-verified NAR before the daemon starts.
           git clone https://github.com/LiGoldragon/kameo.git /run/lojix/kameo-probe
           test "$(git -C /run/lojix/kameo-probe rev-parse HEAD)" = f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01
+          test "$(git -C /run/lojix/kameo-probe symbolic-ref --short HEAD)" = main
           test "$(git -C /run/lojix/kameo-probe rev-list --count HEAD)" = 417
           mkdir -p /run/lojix/kameo-tree
           git -C /run/lojix/kameo-probe archive f491b45d7dcb55e5837eddde3d5d7ca8ceaa9f01 | \
