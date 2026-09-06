@@ -128,10 +128,7 @@ let
   criomosInputSources = inputSources inputs.criomos;
   deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ]
-    ++ directInputSources
-    ++ criomosInputSources
-    ++ deploymentFixtureInputSources
+    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources ++ deploymentFixtureInputSources
   );
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
