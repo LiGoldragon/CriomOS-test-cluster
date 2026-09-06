@@ -311,6 +311,7 @@ let
             "QUERY_STRING": parsed.query,
             "CONTENT_TYPE": handler.headers.get("Content-Type", ""),
             "CONTENT_LENGTH": str(content_length),
+            "HTTP_GIT_PROTOCOL": handler.headers.get("Git-Protocol", ""),
             "REMOTE_ADDR": handler.client_address[0],
             "SERVER_PROTOCOL": handler.protocol_version,
         })
@@ -335,12 +336,19 @@ let
             else:
                 headers.append((name, value.strip()))
         handler.send_response(status)
+        has_content_length = False
         for name, value in headers:
+            if name.lower() == "content-length":
+                has_content_length = True
             handler.send_header(name, value)
+        if not has_content_length:
+            handler.send_header("Content-Length", str(len(response_body)))
         handler.end_headers()
         handler.wfile.write(response_body)
 
     class Handler(http.server.BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
         def do_GET(self):
             if self.path.startswith(KAMEO_PREFIX + "/"):
                 git_response(self)
