@@ -744,7 +744,38 @@ assertModel (
               daemon_journal = deployer.execute(
                   "journalctl -u lojix-daemon.service --no-pager"
               )[1]
+              # `EffectStage::Eval` maps every subprocess failure to the public
+              # FlakeReferenceMalformed terminal reason. Reconstruct the exact
+              # daemon-side eval after materialization so the test reports the
+              # Nix stdout/stderr that distinguishes a locator defect from a
+              # replayed input, import, or selector failure.
+              materialized_root = (
+                  "/var/lib/lojix/generated-inputs/"
+                  "${clusterName}/${vmNode}/base-host"
+              )
+              # Preserve the daemon-produced terminal before the independent
+              # reproduction so it remains clear which result belongs to the
+              # production effect pipeline.
               print("durable failed/rejected deployment state:", observed_query)
+              diagnostic_status, diagnostic_output = deployer.execute(
+                  "set -u; "
+                  "printf 'C6 eval uid='; id -u; printf 'C6 eval working-directory='; pwd; "
+                  "printf '%s\n' '=== C6 relevant Nix environment ==='; "
+                  "env | grep -E '^(NIX_CONFIG|NIX_PATH|NIX_REMOTE|XDG_CACHE_HOME)=' || true; "
+                  "printf '%s\n' '=== C6 relevant Nix configuration ==='; "
+                  "nix show-config | grep -E '^(flake-registry|use-registries|experimental-features|extra-experimental-features) =' || true; "
+                  "escape_nar() { printf '%s' $1 | sed -e 's/%/%25/g' -e 's/+/%2B/g' -e 's#/#%2F#g' -e 's/=/%3D/g'; }; "
+                  "set -- nix eval --raw; "
+                  f"for input in horizon system deployment secrets; do nar=$(nix hash path --type sha256 --sri {materialized_root}/$input); "
+                  "encoded=$(escape_nar $nar); printf 'C6 eval override %s path:%s narHash=%s\n' $input "
+                  f"{materialized_root}/$input $encoded; set -- $@ --override-input $input "
+                  f"path:{materialized_root}/$input?narHash=$encoded; done; "
+                  "set -- $@ '${deployFlakeReference}#nixosConfigurations.target.config.system.build.toplevel.drvPath'; "
+                  "printf '%s\n' '=== C6 reconstructed daemon nix eval ==='; $@"
+              )
+              print("=== reconstructed daemon nix eval status ===", diagnostic_status)
+              print("=== reconstructed daemon nix eval output ===")
+              print(diagnostic_output)
               print("=== lojix daemon deployment journal ===")
               print(daemon_journal)
               raise AssertionError(
