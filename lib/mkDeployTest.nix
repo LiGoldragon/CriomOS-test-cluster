@@ -424,6 +424,11 @@ let
       ...
     }:
     {
+      # The real immutable four-input evaluation reads the selected Nix source
+      # graph. runNixOSTest defaults to 1 GiB, which OOM-kills that evaluation
+      # after admission; this is test-runner capacity only, not a Lojix option.
+      virtualisation.memorySize = 4096;
+
       # The whole offline deploy closure pinned into the deployer's store so the
       # daemon's `nix eval`/`nix build` resolve with NO network: the exact
       # immutable root flake source, the realised mercury system (so `nix build
@@ -556,11 +561,23 @@ let
             test -s "$archive"
             actual_archive_hash="$(sha256sum "$archive" | cut -d ' ' -f1)"
             test "$actual_archive_hash" = "$archive_hash"
-            archive_root="/run/lojix/source-replay/archive-$replayed_count"
-            mkdir -p "$archive_root"
-            ${pkgs.gnutar}/bin/tar --use-compress-program=${pkgs.gzip}/bin/gzip -xf "$archive" -C "$archive_root"
-            archive_last_modified="$(find "$archive_root/source" -printf '%T@\n' | cut -d . -f1 | sort -u)"
-            test "$archive_last_modified" = "$last_modified"
+            # Every source archive is built with one lock-derived mtime for all
+            # members. Read its first source/ header through tar instead of
+            # expanding Nixpkgs under /run: the latter is needlessly large and
+            # can prevent the daemon from starting before Lojix is involved.
+            expected_archive_timestamp="$(${pkgs.coreutils}/bin/date --utc --date "@$last_modified" '+%Y-%m-%d %H:%M:%S')"
+            archive_header="$(
+              TZ=UTC ${pkgs.gnutar}/bin/tar \
+                --use-compress-program=${pkgs.gzip}/bin/gzip \
+                --full-time -tvf "$archive" | ${pkgs.coreutils}/bin/head -n 1
+            )"
+            case "$archive_header" in
+              *"$expected_archive_timestamp source/") ;;
+              *)
+                echo "C6 source replay timestamp mismatch for $route: expected $expected_archive_timestamp source/, got $archive_header" >&2
+                exit 1
+                ;;
+            esac
             echo "C6 source replay verified $route narHash=$nar_hash lastModified=$last_modified archiveSha256=$archive_hash"
           done < "${sourceReplayArchives}/manifest.tsv"
           test "$replayed_count" = "${toString (builtins.length sourceReplayEntries)}"
