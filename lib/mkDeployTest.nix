@@ -109,8 +109,28 @@ let
   # definition below, `(fieldlab, mercury)`, BaseHost, NoSecrets, and the same
   # immutable CriomOS source/selector. The VM request regenerates the four
   # inputs and must reach this content-addressed target again.
-  deployedToplevel = "/nix/store/yjbywpb126djjpq8h56hbax58f3gi55l-nixos-system-mercury-26.11.20260813.0e251e2";
-  deployedToplevelDrv = "/nix/store/bix0y5slnhh16ggc6gp9qlyb5xlln9gp-nixos-system-mercury-26.11.20260813.0e251e2.drv";
+  # Keep explicit Nix-store context: virtualisation.additionalPaths uses this
+  # context to register the closure in the test VM's Nix DB. `storePath` is not
+  # available to a pure flake evaluation, so attach the known valid references
+  # directly instead of weakening that evaluation policy.
+  deployedToplevel =
+    let
+      path = "/nix/store/yjbywpb126djjpq8h56hbax58f3gi55l-nixos-system-mercury-26.11.20260813.0e251e2";
+    in
+    builtins.appendContext path {
+      "${path}" = {
+        path = true;
+      };
+    };
+  deployedToplevelDrv =
+    let
+      path = "/nix/store/bix0y5slnhh16ggc6gp9qlyb5xlln9gp-nixos-system-mercury-26.11.20260813.0e251e2.drv";
+    in
+    builtins.appendContext path {
+      "${path}" = {
+        path = true;
+      };
+    };
 
   # The immutable root flake and every direct input are present in the
   # deployer store before the daemon evaluates the exact GitHub revision.
@@ -856,12 +876,18 @@ let
       # after admission; this is test-runner capacity only, not a Lojix option.
       virtualisation.memorySize = 4096;
 
-      # The whole offline deploy closure pinned into the deployer's store so the
-      # daemon's `nix eval`/`nix build` resolve with NO network: the exact
-      # immutable root flake source, the realised mercury system (so `nix build
-      # <drv>^*` is a store hit), and every locked input source are present.
-      system.extraDependencies = [
+      # Register the independently materialized Mercury output and derivation in
+      # the deployer VM's Nix DB.  `system.extraDependencies` alone puts a path
+      # in the NixOS system closure but does not make it an available VM store
+      # path for the daemon's subsequent `nix build <drv>^*` command.
+      virtualisation.additionalPaths = [
         deployedToplevel
+        deployedToplevelDrv
+      ];
+
+      # The exact immutable root flake source and each locked input remain in
+      # the deployer's system closure for the offline four-input evaluation.
+      system.extraDependencies = [
         horizonDefinitionPath
       ]
       ++ deployFlakeInputSources;
@@ -1076,6 +1102,23 @@ let
             --argjson last_modified 1788675700 \
             '.path == $source and .locked.narHash == $nar_hash and .revision == $revision and .locked.lastModified == $last_modified' \
             "$metadata" >/dev/null
+          # This is a fixture precondition, not the deployment: prove the
+          # separately materialized output and its derivation are registered
+          # with every requisite before Lojix starts.  Only after those checks
+          # make rebuilding impossible does the exact command the daemon will
+          # use have to return the already-realized output.
+          nix-store --verify-path "${deployedToplevel}"
+          nix-store --verify-path "${deployedToplevelDrv}"
+          requisites=/run/lojix/c6-mercury-requisites
+          nix-store --query --requisites "${deployedToplevel}" > "$requisites"
+          test -s "$requisites"
+          while IFS= read -r requisite; do
+            nix-store --verify-path "$requisite"
+          done < "$requisites"
+          test "$(nix-store --query --deriver "${deployedToplevel}")" = "${deployedToplevelDrv}"
+          preseeded_output="$(nix build --no-link --print-out-paths "${deployedToplevelDrv}^*")"
+          test "$preseeded_output" = "${deployedToplevel}"
+          echo "C6 deployer store preseed verified output=${deployedToplevel} derivation=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
           # Place the transparent capture shim only in the daemon's inherited
