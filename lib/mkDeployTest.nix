@@ -128,11 +128,72 @@ let
   criomosInputSources = inputSources inputs.criomos;
   deploymentFixtureInputSources = inputSources inputs.c6DeploymentFixture;
   deployFlakeInputSources = inputs.nixpkgs.lib.unique (
-    [ deployFlakeSource ]
-    ++ directInputSources
-    ++ criomosInputSources
-    ++ deploymentFixtureInputSources
+    [ deployFlakeSource ] ++ directInputSources ++ criomosInputSources ++ deploymentFixtureInputSources
   );
+
+  # Direct immutable github: roots bypass registries and Nix has no supported
+  # cache-import interface. C6 replays only the exact GitHub archive endpoint
+  # in a third test VM. The submitted Lojix reference remains github:, and the
+  # deployer verifies Nix's resolved source path and narHash before it starts.
+  sourceReplayAddress = "192.168.1.3";
+  sourceReplayRoute = "/repos/LiGoldragon/CriomOS-test-cluster/tarball/1eed8642f9ec6b91bea582e1beacacd5a66157fe";
+  sourceReplayTls =
+    pkgs.runCommand "c6-source-replay-tls"
+      {
+        nativeBuildInputs = [ pkgs.openssl ];
+      }
+      ''
+        mkdir -p "$out"
+        openssl req -x509 -newkey rsa:2048 -nodes \
+          -keyout "$out/key.pem" \
+          -out "$out/cert.pem" \
+          -days 3650 \
+          -subj /CN=api.github.com \
+          -addext subjectAltName=DNS:api.github.com
+      '';
+  sourceReplayArchive =
+    pkgs.runCommand "c6-source-replay-archive"
+      {
+        nativeBuildInputs = [
+          pkgs.gnutar
+          pkgs.gzip
+        ];
+      }
+      ''
+        mkdir -p "$out/source"
+        cp -a ${deployFlakeSource}/. "$out/source/"
+        tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+          -C "$out" -cf - source | gzip -n > "$out/archive.tar.gz"
+      '';
+  sourceReplayServer = pkgs.writeText "c6-source-replay.py" ''
+    import http.server
+    import os
+    import ssl
+
+    ARCHIVE = "${sourceReplayArchive}/archive.tar.gz"
+    ROUTE = "${sourceReplayRoute}"
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != ROUTE:
+                self.send_error(404, "C6 source replay permits only the pinned archive route")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-gzip")
+            self.send_header("Content-Length", str(os.path.getsize(ARCHIVE)))
+            self.end_headers()
+            with open(ARCHIVE, "rb") as archive:
+                self.wfile.write(archive.read())
+
+        def log_message(self, format, *args):
+            print("C6 source replay: " + format % args, flush=True)
+
+    server = http.server.ThreadingHTTPServer(("0.0.0.0", 443), Handler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain("/etc/c6-source-replay/cert.pem", "/etc/c6-source-replay/key.pem")
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+    server.serve_forever()
+  '';
 
   # A throwaway deploy keypair, generated reproducibly at build time. Private
   # half lives only on the deployer; public half authorises root on the target.
@@ -185,6 +246,30 @@ let
   targetTestIp = "192.168.1.2";
 
   deployPublicKey = builtins.readFile "${deployKeyPair}/deploy_key.pub";
+
+  sourceReplayModule =
+    { pkgs, ... }:
+    {
+      environment.etc."c6-source-replay/cert.pem".source = "${sourceReplayTls}/cert.pem";
+      environment.etc."c6-source-replay/key.pem" = {
+        source = "${sourceReplayTls}/key.pem";
+        mode = "0400";
+      };
+      systemd.services.c6-source-replay = {
+        description = "C6 exact immutable GitHub archive replay";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network.target" ];
+        path = [ pkgs.python3 ];
+        serviceConfig = {
+          Type = "simple";
+          Restart = "no";
+        };
+        script = ''
+          exec ${pkgs.python3}/bin/python ${sourceReplayServer}
+        '';
+      };
+      system.stateVersion = lib.mkDefault "26.05";
+    };
 
   # The UEFI test-substrate (C3) — writable store, require-sigs off, NSS / root
   # shell prebakes, sshd keys-only + the deploy key, EFI label alignment. The
@@ -284,17 +369,11 @@ let
         pkgs.nix
       ];
 
-      # The daemon's nix must be OFFLINE + trust unsigned local closures (the
-      # deployed system is locally built, unsigned) + never reach a builder or
-      # substituter (hermetic). The KEY hermetic-eval setting:
-      # `tarball-ttl` very large + `use-registries = false` makes the daemon's
-      # production `nix eval --refresh …` RE-USE the store-resident github-pinned
-      # input copies (pinned into the node store by system.extraDependencies via
-      # the deploy flake's evalSources) instead of re-unpacking them from github
-      # (which would need the network). So the deploy flake's plain
-      # github-pinned lock resolves entirely from store offline — no lock
-      # rewriting, no `--offline` flag on the daemon, deployed closure identical
-      # to the in-process build.
+      # Nix remains offline from the outside world and trusts unsigned local
+      # closures. The fixture maps only api.github.com to the source-replay VM
+      # and pins that synthetic endpoint with its test CA. Lojix still receives
+      # the immutable production github: URI; neither registry nor path
+      # substitution is involved.
       nix.settings = {
         substituters = lib.mkForce [ ];
         require-sigs = lib.mkForce false;
@@ -302,6 +381,7 @@ let
         tarball-ttl = 999999999;
         use-registries = false;
         flake-registry = "";
+        ssl-cert-file = "${sourceReplayTls}/cert.pem";
         experimental-features = [
           "nix-command"
           "flakes"
@@ -340,6 +420,7 @@ let
           criomeDomainName
           guestName
         ];
+        "${sourceReplayAddress}" = [ "api.github.com" ];
       };
 
       # The lojix daemon as a service, configured the REAL way:
@@ -376,22 +457,21 @@ let
           # points UserKnownHostsFile here).
           install -d -m 700 /root/.ssh
           touch /root/.ssh/known_hosts
-          # PRE-WARM the nix flake fetcher cache from the STORE, offline. The
-          # daemon's eval is the production `nix eval --refresh …` (no --offline
-          # flag — we never alter the daemon's command). `--refresh` re-resolves
-          # the deploy flake's locked github-pinned inputs (criomos's transitive
-          # tree); with a cold cache that re-resolution unpacks each input into
-          # the git/tarball cache, which needs the network. `nix flake archive
-          # --offline` copies + REGISTERS the whole input closure from the store
-          # into this HOME's fetcher cache (every source pinned into the node
-          # store via system.extraDependencies), so the daemon's later
-          # `--refresh` eval resolves entirely from store — hermetic, no network.
-          # This is a deployer-NODE concern (a substrate property like
-          # require-sigs=false), not a daemon change.
+          # Fetch the direct-GitHub root through the fixture-only TLS replay
+          # before starting the daemon. A top-level github: URI carries no
+          # narHash, so require Nix's resolved metadata to match the exact
+          # lock-derived path, hash, and revision. Lojix then evaluates the
+          # unchanged URI under the same Nix configuration.
           export HOME=/var/lib/lojix
           export XDG_CACHE_HOME=/var/lib/lojix/.cache
           mkdir -p "$XDG_CACHE_HOME"
-          nix flake archive --offline "${deployFlakeReference}" >/dev/null
+          nix flake metadata --refresh --json "${deployFlakeReference}" \
+            | ${pkgs.jq}/bin/jq -e \
+              --arg source "${deployFlakeSource}" \
+              --arg nar_hash "sha256-FR1uxYLyv11PWG5Ta0B9ULTLzTOqLDZf3JAuDVq+YPc=" \
+              --arg revision "1eed8642f9ec6b91bea582e1beacacd5a66157fe" \
+              '.path == $source and .locked.narHash == $nar_hash and .revision == $revision' \
+            >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
             "ConfigurationWriteRequest.{ /run/lojix/ordinary.sock 432 /run/lojix/owner.sock 384 /var/lib/lojix /var/lib/lojix/lojix-store.db deployer NoTestDefaults /run/lojix/startup.rkyv }"
           exec ${lojixDaemon}/bin/lojix-daemon /run/lojix/startup.rkyv
@@ -442,6 +522,7 @@ assertModel (
     };
 
     nodes.deployer = deployerModule;
+    nodes.source-replay = sourceReplayModule;
     nodes.${vmNode} = targetModule;
 
     # The test reads like prose: ONE concept — lojix deploys a full OS and the
