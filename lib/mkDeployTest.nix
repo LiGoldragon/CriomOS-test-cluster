@@ -1116,16 +1116,16 @@ let
             "$metadata" >/dev/null
           # This is a fixture precondition, not the deployment: prove the
           # separately materialized output is registered with every runtime
-          # requisite before Lojix starts.  Its recorded deriver must be the
+          # requisite before Lojix starts.  `--check-validity` checks Nix's
+          # database registration without rehashing path contents; import
+          # already verifies the copied NARs.  Its recorded deriver must be the
           # expected .drv; Lojix's real Eval then creates that derivation before
           # its authoritative Build, which the fixture observes separately.
-          nix-store --verify-path "${deployedToplevel}"
+          nix-store --check-validity "${deployedToplevel}"
           requisites=/run/lojix/c6-mercury-requisites
           nix-store --query --requisites "${deployedToplevel}" > "$requisites"
           test -s "$requisites"
-          while IFS= read -r requisite; do
-            nix-store --verify-path "$requisite"
-          done < "$requisites"
+          ${pkgs.findutils}/bin/xargs -r -n 256 nix-store --check-validity < "$requisites"
           test "$(nix-store --query --deriver "${deployedToplevel}")" = "${deployedToplevelDrv}"
           echo "C6 deployer store preseed verified output=${deployedToplevel} derivation=${deployedToplevelDrv} requisites=$(wc -l < "$requisites")"
           ${lojixClis}/bin/lojix-write-configuration \
