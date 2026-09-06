@@ -103,14 +103,14 @@ let
   # The normal CriomOS root owns all four materialized input names: `horizon`,
   # `system`, `deployment`, and `secrets`. The smoke driver remains a separate
   # test-cluster checkout; it cannot stand in for the RequireImmutable source.
-  deployFlakeReference = "github:LiGoldragon/CriomOS?rev=82f6bf5958f999c97c4d81f985d4ac91bdbc2340";
+  deployFlakeReference = "github:LiGoldragon/CriomOS?rev=de02ef17a47fd92ae7f38b1c32330a42b6066330";
   deployFlakeSource = inputs.criomos.outPath;
   # This closure came from a real Lojix BuildOnly materialization of the exact
   # definition below, `(fieldlab, mercury)`, BaseHost, NoSecrets, and the same
   # immutable CriomOS source/selector. The VM request regenerates the four
   # inputs and must reach this content-addressed target again.
-  deployedToplevel = "/nix/store/mmx94nvp9mmrnf6khg12xr49vd8kdnvr-nixos-system-mercury-26.11.20260813.0e251e2";
-  deployedToplevelDrv = "/nix/store/izzd90gl2vcaym5lpr1cpqsmgkv8vk3y-nixos-system-mercury-26.11.20260813.0e251e2.drv";
+  deployedToplevel = "/nix/store/yjbywpb126djjpq8h56hbax58f3gi55l-nixos-system-mercury-26.11.20260813.0e251e2";
+  deployedToplevelDrv = "/nix/store/bix0y5slnhh16ggc6gp9qlyb5xlln9gp-nixos-system-mercury-26.11.20260813.0e251e2.drv";
 
   # The immutable root flake and every direct input are present in the
   # deployer store before the daemon evaluates the exact GitHub revision.
@@ -145,9 +145,9 @@ let
     {
       owner = "LiGoldragon";
       repo = "CriomOS";
-      revision = "82f6bf5958f999c97c4d81f985d4ac91bdbc2340";
-      narHash = "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y=";
-      lastModified = 1788669988;
+      revision = "de02ef17a47fd92ae7f38b1c32330a42b6066330";
+      narHash = "sha256-H4TR3gal5vXxLy9vdmyuS580I8liV9uccTU570WRb1Q=";
+      lastModified = 1788675700;
     }
     {
       owner = "LiGoldragon";
@@ -180,9 +180,34 @@ let
     {
       owner = "LiGoldragon";
       repo = "clavifaber";
-      revision = "d0488014bf931a4690cc2f64a0b41c1df3435cab";
-      narHash = "sha256-WH9l+01piMkotUeYSGVkzQ5zmzCpLpwTvHrgTnu2dj4=";
-      lastModified = 1786576199;
+      revision = "2203f677d3448d99269d66386d35683cd10a05ef";
+      narHash = "sha256-dgwbd6HjFb7zHAFRqV5Bb0nVeR93YQ7llwYhlivI4DA=";
+      lastModified = 1788675130;
+    }
+    # Clavifaber 2203 adds the current Ethos generator and its two generated
+    # Datom inputs. Include this small declared code closure conservatively:
+    # the warm-store exact eval did not need to refetch it, while C6's empty
+    # deployer fetcher cache must not rely on that host state.
+    {
+      owner = "LiGoldragon";
+      repo = "ethos-zero";
+      revision = "bcf728bbe4521e663f4773d3c1fd4ebb643df32e";
+      narHash = "sha256-XkN67mfbcmW6z6ZBA2r8LOm1Hr+akrSz9tIFtYm/yOQ=";
+      lastModified = 1788642562;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "datom-codec";
+      revision = "41a3c073d5c5cdcb3ebb1a5c842e8c068145fdb2";
+      narHash = "sha256-/mShiTE68yXKtwVlym4fT8IAPEw2+UJEHZDLBMOyTw8=";
+      lastModified = 1788623231;
+    }
+    {
+      owner = "LiGoldragon";
+      repo = "protos";
+      revision = "2d999f1733347b7e64e24b2f75ba889ad7182bc0";
+      narHash = "sha256-+hhP/FVgUgvoZLzcMKP2R9TFrVr0WOUDDTDdv4uL5qU=";
+      lastModified = 1788623212;
     }
     {
       owner = "LiGoldragon";
@@ -990,9 +1015,9 @@ let
           test -s "$metadata"
           ${pkgs.jq}/bin/jq -e \
             --arg source "${deployFlakeSource}" \
-            --arg nar_hash "sha256-5oLG5SeumySnnOC/+cIu1tpoR9OXh/L4csoXZv3aJ9Y=" \
-            --arg revision "82f6bf5958f999c97c4d81f985d4ac91bdbc2340" \
-            --argjson last_modified 1788669988 \
+            --arg nar_hash "sha256-H4TR3gal5vXxLy9vdmyuS580I8liV9uccTU570WRb1Q=" \
+            --arg revision "de02ef17a47fd92ae7f38b1c32330a42b6066330" \
+            --argjson last_modified 1788675700 \
             '.path == $source and .locked.narHash == $nar_hash and .revision == $revision and .locked.lastModified == $last_modified' \
             "$metadata" >/dev/null
           ${lojixClis}/bin/lojix-write-configuration \
